@@ -13,11 +13,9 @@ import {
   dismissNotationHelp,
   endSession,
   invokePause,
-  nextQuestion,
   resumeFromPause,
   startSession,
   submitAnswer,
-  xpFor,
   type SessionState,
 } from "@/lib/game/session";
 
@@ -37,7 +35,6 @@ const POOL = questionData as unknown as Question[];
 export default function PlayPage() {
   const [state, setState] = useState<SessionState>(() => startSession(POOL));
   const [input, setInput] = useState("");
-  const [hitId, setHitId] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus follows the loop, so typing always lands somewhere useful.
@@ -45,17 +42,20 @@ export default function PlayPage() {
     if (state.phase !== "summary") inputRef.current?.focus();
   }, [state.phase, state.current?.id]);
 
+  function grade(from: SessionState, answer: string) {
+    const before = from.lastAward?.seq ?? 0;
+    const graded = submitAnswer(from, answer, POOL);
+    setState(graded);
+    // A correct answer has already advanced the stream; clear the box for the
+    // question that is now on screen. A wrong one keeps the text so it can be
+    // edited rather than retyped.
+    if ((graded.lastAward?.seq ?? 0) > before) setInput("");
+  }
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const answer = input;
     const empty = answer.trim() === "";
-
-    // Feedback: Enter moves the stream along.
-    if (state.phase === "feedback") {
-      setState(nextQuestion(state, POOL));
-      setInput("");
-      return;
-    }
 
     // Inside the pause an empty Enter walks the ladder; a real answer leaves it.
     if (state.phase === "paused" || state.phase === "revealed") {
@@ -63,30 +63,18 @@ export default function PlayPage() {
         setState(state.phase === "paused" ? advanceHint(state) : resumeFromPause(state));
         return;
       }
-      const graded = submitAnswer(resumeFromPause(state), answer, POOL);
-      setState(graded);
-      if (graded.lastResult?.verdict === "correct") {
-        setInput("");
-        setHitId((n) => n + 1);
-      }
+      grade(resumeFromPause(state), answer);
       return;
     }
 
     if (empty) return;
-
-    const graded = submitAnswer(state, answer, POOL);
-    setState(graded);
-    // Keep a wrong answer in the box so it can be edited rather than retyped.
-    if (graded.lastResult?.verdict === "correct") {
-      setInput("");
-      setHitId((n) => n + 1);
-    }
+    grade(state, answer);
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
     if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
-      if (state.phase === "grinding" || state.phase === "feedback") {
+      if (state.phase === "grinding") {
         setState(invokePause(state, state.pauseOffered ? "offered" : "manual"));
       }
       return;
@@ -134,14 +122,15 @@ export default function PlayPage() {
 
         <MathText text={q.prompt} className="block text-xl leading-relaxed" />
 
-        {/* The damage number. Keyed so a repeat correct answer replays it. */}
-        {state.phase === "feedback" && (
+        {/* The hit lands over the transition. Keyed on the award sequence so
+            each correct answer replays it, including a repeat of the same XP. */}
+        {state.lastAward && (
           <span
-            key={hitId}
+            key={state.lastAward.seq}
             aria-hidden
             className="anim-hit text-jade pointer-events-none absolute right-7 top-6 text-3xl font-bold tabular-nums"
           >
-            +{xpFor(q.tier, state.usedPauseOnCurrent)}
+            +{state.lastAward.xp}
           </span>
         )}
       </section>
@@ -164,25 +153,11 @@ export default function PlayPage() {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder={
-            state.phase === "feedback"
-              ? "Enter for the next one"
-              : inPause
-                ? "Answer, or Enter alone to go on"
-                : "Your answer"
-          }
-          className={`pixel-frame bg-ink px-4 py-3 text-lg outline-none placeholder:text-paper-dim/60 focus:border-jade-deep ${
-            state.phase === "feedback" ? "text-paper-dim" : "text-paper"
-          }`}
+          placeholder={inPause ? "Answer, or Enter alone to go on" : "Your answer"}
+          className="pixel-frame text-paper bg-ink px-4 py-3 text-lg outline-none placeholder:text-paper-dim/60 focus:border-jade-deep"
         />
 
         <div aria-live="polite" className="min-h-[1.5rem] text-sm">
-          {state.phase === "feedback" && (
-            <span className="text-jade">
-              Correct{state.usedPauseOnCurrent ? " — and you got there yourself." : "."}{" "}
-              <span className="text-paper-dim">Enter for the next one.</span>
-            </span>
-          )}
           {showMiss && (
             <span className="text-blood">
               Not quite.{" "}

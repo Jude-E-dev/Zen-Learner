@@ -142,10 +142,32 @@ describe("session — the grind", () => {
   it("awards XP scaled by tier on a correct answer", () => {
     const s = sessionOn("chain-rule-power"); // tier 1
     const after = submitAnswer(s, "15(3x+1)^4", pool, 2_000);
-    expect(after.phase).toBe("feedback");
     expect(after.xp).toBe(xpFor(1, false));
     expect(after.correct).toBe(1);
     expect(after.streak).toBe(1);
+  });
+
+  it("advances to the next question immediately, with no confirmation step", () => {
+    const s = sessionOn("chain-rule-power");
+    const after = submitAnswer(s, "15(3x+1)^4", pool, 2_000);
+    expect(after.phase).toBe("grinding");
+    expect(after.current?.id).not.toBe("chain-rule-power");
+    // The reward survives the transition so it can animate over it.
+    expect(after.lastAward).toMatchObject({ xp: xpFor(1, false), afterPause: false });
+  });
+
+  it("clears a stale reward when the next answer is wrong", () => {
+    const scored = submitAnswer(sessionOn("chain-rule-power"), "15(3x+1)^4", pool, 2_000);
+    expect(scored.lastAward).not.toBeNull();
+
+    // Put a known question back in front so the wrong answer is unambiguous.
+    const s = { ...scored, current: question("chain-rule-power") };
+    expect(submitAnswer(s, "5(3x+1)^4", pool, 3_000).lastAward).toBeNull();
+  });
+
+  it("clears a stale reward when the next input is unreadable", () => {
+    const scored = submitAnswer(sessionOn("chain-rule-power"), "15(3x+1)^4", pool, 2_000);
+    expect(submitAnswer(scored, "((", pool, 3_000).lastAward).toBeNull();
   });
 
   it("keeps the learner on the same question after a wrong answer", () => {
@@ -189,7 +211,6 @@ describe("session — unreadable input", () => {
   it("does not break a correct streak", () => {
     let s = sessionOn("chain-rule-power");
     s = submitAnswer(s, "15(3x+1)^4", pool, 2_000);
-    s = nextQuestion(s, pool, 2_100);
     const streakBefore = s.streak;
     const after = submitAnswer(s, "!!!", pool, 3_000);
     expect(after.streak).toBe(streakBefore);
@@ -289,8 +310,7 @@ describe("session — end to end", () => {
     for (let i = 0; i < 40 && s.phase !== "summary"; i++) {
       const q = s.current!;
       s = submitAnswer(s, q.canonicalAnswer, pool, i * 1_000 + 500);
-      expect(s.phase).toBe("feedback");
-      s = nextQuestion(s, pool, i * 1_000 + 600);
+      expect(s.phase).toBe("grinding");
     }
     expect(s.answered).toBe(40);
     expect(s.correct).toBe(40);

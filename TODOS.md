@@ -57,23 +57,53 @@ answered first.
 
 ---
 
-## Revisit coins and audio (cut from the vertical slice)
+## Customisable ronin avatar — and the coins that buy it
 
-**What:** Reconsider the coin currency and the ambient audio layer, both cut during the eng review.
+**What:** An on-screen ronin the learner customises with what they earn. This is one feature
+with the coin economy, not two: the avatar is the sink coins were missing.
 
-**Why:** Coins were cut because no sink was specced — there is nothing to spend them on, making
-them a dead currency that still costs HUD, persistence, and award-logic work. Audio was cut
-because it ships muted by default and answers neither instrumentation hypothesis. Neither is a
-bad idea; both are premature before the loop is proven.
+**Why:** Coins were cut during the eng review for having nothing to spend them on. A currency
+with no sink is worse than no currency, because it visibly does nothing. The avatar resolves
+that directly, and it also gives the screen a character to sit with during a long grind — a
+practice hall with somebody in it, rather than a form.
 
-**Pros:** A coin economy with an actual sink (cosmetic unlocks, hint purchases) gives the grind a
-second reward axis; audio is a large part of the 16-bit feel the project is going for.
+**Pros:** Turns XP and coins into a visible, accumulating identity, which is exactly the kind of
+long-horizon payoff the design doc says pure numbers-going-up cannot supply. It also makes the
+summary card far more shareable: a card with *your* ronin on it is a different object from a
+card with a percentage on it, and sharing is the only distribution channel this thing has.
 
-**Cons:** Coins are only worth building alongside a sink, which is its own scope. Audio needs
-asset sourcing under a clean licence, which the plan explicitly constrains.
+**Cons:** Real art scope. The plan forbids third-party sprite packs with unclear licensing, so
+every piece is CSS/SVG-drawn or commissioned. Cosmetics also need persistence and a shop
+surface, both of which are new UI.
 
-**Context:** Re-add coins only together with something to spend them on — a currency with no sink
-is worse than no currency, because it visibly does nothing. For audio, the original build prompt
-asks for one ambient loop plus a small SFX set, muted by default, toggleable, and remembered.
+**Context:** Design it as: coins awarded alongside XP (scaled by tier, reduced after a pause,
+same as XP), a small catalogue of swappable parts (blade, kasa, haori, banner), and equipped
+state persisted next to progress in IndexedDB. Keep it strictly cosmetic — the moment a
+purchase affects difficulty or hints, the mastery gate stops meaning anything. Two open
+questions to settle first: does the avatar appear during the grind or only on the summary card,
+and is it earned by coins alone or gated on rank (which would give ranks a second job).
+
+**Depends on:** Stage 4 (progression + persistence) landing first, since cosmetics need
+somewhere durable to live. Best built after the loop is proven fun, not before.
+
+---
+
+## Revisit the audio layer (cut from the vertical slice)
+
+**What:** One ambient loop plus a small SFX set, muted by default, toggleable, and remembered.
+
+**Why:** Cut during the eng review because it ships muted by default and answers neither
+instrumentation hypothesis. Not a bad idea, just not one that earns its place before the loop
+is proven.
+
+**Pros:** A large part of the 16-bit feel the project is going for; the hit and miss cues would
+carry real weight alongside the existing visual feedback.
+
+**Cons:** Needs asset sourcing under a clean licence, which the plan explicitly constrains.
+
+**Context:** The build prompt asks for the toggle state to be remembered, so this wants the
+persistence layer in place. Respect `prefers-reduced-motion` neighbours here too — an audio
+equivalent (`prefers-reduced-motion` does not cover sound, so a first-run default of muted is
+doing that job).
 
 **Depends on:** The core loop being proven fun (the session-1 vs session-5 measurement).

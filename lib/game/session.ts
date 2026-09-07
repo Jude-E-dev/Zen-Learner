@@ -30,7 +30,20 @@ import {
  * (or working through the reveal) advances the stream.
  */
 
-export type Phase = "grinding" | "feedback" | "paused" | "revealed" | "summary";
+export type Phase = "grinding" | "paused" | "revealed" | "summary";
+
+/**
+ * A correct answer advances the stream immediately — there is no confirmation
+ * beat. The reward lands as a floating number over the transition instead of a
+ * screen the learner has to dismiss, because "Enter to continue" turns a flow
+ * state into a series of stops.
+ */
+export interface Award {
+  xp: number;
+  afterPause: boolean;
+  /** Increments per award so the UI can replay the hit animation. */
+  seq: number;
+}
 
 export interface SessionState {
   phase: Phase;
@@ -56,6 +69,8 @@ export interface SessionState {
   showNotationHelp: boolean;
 
   lastResult: CheckResult | null;
+  /** Survives the question change so the hit can animate over the transition. */
+  lastAward: Award | null;
   events: GameEvent[];
 }
 
@@ -90,6 +105,7 @@ function blank(now: number): SessionState {
     hintRung: 0,
     showNotationHelp: false,
     lastResult: null,
+    lastAward: null,
     events: [],
   };
 }
@@ -157,6 +173,7 @@ export function submitAnswer(
       consecutiveUnreadable,
       showNotationHelp,
       lastResult: result,
+      lastAward: null,
       events,
     };
   }
@@ -188,19 +205,25 @@ export function submitAnswer(
 
   if (result.verdict === "correct") {
     const streak = state.streak + 1;
-    return {
+    const correct = state.correct + 1;
+    const scored: SessionState = {
       ...state,
-      phase: "feedback",
       selector,
       xp: state.xp + xpFor(q.tier, afterPause),
       streak,
       bestStreak: Math.max(state.bestStreak, streak),
       answered: state.answered + 1,
-      correct: state.correct + 1,
+      correct,
       consecutiveUnreadable: 0,
       lastResult: result,
+      lastAward: { xp: xpFor(q.tier, afterPause), afterPause, seq: correct },
       events,
     };
+
+    // Straight into the next question. No confirmation step.
+    const next = selectQuestion(scored.selector, pool);
+    if (!next) return endSession(scored, now);
+    return freshQuestion(scored, next, now);
   }
 
   const wrongOnCurrent = state.wrongOnCurrent + 1;
@@ -217,6 +240,8 @@ export function submitAnswer(
       state.pauseOffered || wrongOnCurrent >= OFFER_PAUSE_AFTER_WRONG,
     attemptStartedAt: now,
     lastResult: result,
+    // Clear any stale reward so a wrong answer never sits next to a +XP.
+    lastAward: null,
     events,
   };
 }
