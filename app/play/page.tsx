@@ -8,6 +8,7 @@ import { MathText } from "@/components/MathText";
 import { NotationHelp } from "@/components/NotationHelp";
 import { PausePanel } from "@/components/PausePanel";
 import { SummaryCard } from "@/components/SummaryCard";
+import { Banner, type BannerMessage } from "@/components/Banner";
 import {
   advanceHint,
   dismissNotationHelp,
@@ -57,6 +58,69 @@ export default function PlayPage() {
   // Rank is derived from lifetime mastery plus what has happened this session,
   // so climbing a rank happens the moment it is earned rather than at the end.
   const rank = rankFor(masteryWithSession(profile.mastery, state));
+
+  // Watch for the moments worth announcing. Refs rather than state so noticing
+  // a change never itself causes a render.
+  const [banner, setBanner] = useState<BannerMessage | null>(null);
+  const seenRank = useRef<string | null>(null);
+  const seenTier = useRef<number | null>(null);
+  const seenCap = useRef(false);
+  const bannerSeq = useRef(0);
+
+  // One effect, not three. A single answer can promote a tier AND earn a rank
+  // at the same time, and separate effects would race — the last one to run
+  // would silently overwrite the bigger moment. Rank always wins.
+  useEffect(() => {
+    const previousRank = seenRank.current;
+    const previousTier = seenTier.current;
+    const previousCap = seenCap.current;
+    const tier = state.selector.tier;
+
+    seenRank.current = rank.current.id;
+    seenTier.current = tier;
+    seenCap.current = state.selector.atCap;
+
+    // First observation is just arriving, not an event worth announcing.
+    if (previousRank === null || previousTier === null) return;
+
+    const announce = (message: Omit<BannerMessage, "seq">) => {
+      bannerSeq.current += 1;
+      setBanner({ ...message, seq: bannerSeq.current });
+    };
+
+    if (previousRank !== rank.current.id) {
+      announce({
+        kind: "rank-up",
+        title: rank.current.name,
+        detail: rank.current.blurb,
+      });
+      return;
+    }
+
+    if (previousTier !== tier) {
+      const up = tier > previousTier;
+      announce({
+        kind: up ? "tier-up" : "tier-down",
+        title: `TIER ${tier}`,
+        detail: up ? "Harder questions from here." : "Easing off. Nothing lost.",
+      });
+      return;
+    }
+
+    if (!previousCap && state.selector.atCap) {
+      announce({
+        kind: "at-cap",
+        title: "TIER 5",
+        detail: "Nowhere left to climb. Hold it here.",
+      });
+    }
+  }, [
+    rank.current.id,
+    rank.current.name,
+    rank.current.blurb,
+    state.selector.tier,
+    state.selector.atCap,
+  ]);
 
   function grade(from: SessionState, answer: string) {
     const before = from.lastAward?.seq ?? 0;
@@ -141,6 +205,8 @@ export default function PlayPage() {
       className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-5 py-8"
       onKeyDown={handleKeyDown}
     >
+      <Banner message={banner} />
+
       <Hud state={state} rank={rank} />
 
       {!durable && (

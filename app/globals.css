@@ -72,8 +72,14 @@ body {
 .anim-quiet { animation: quiet-in 260ms steps(6, end) both; }
 
 /*
- * Reduced motion cuts the shake and the particles but never the state change.
- * The learner still sees exactly what happened, just without the movement.
+ * Reduced motion cuts the shake and the drift but never the state change. The
+ * learner still sees exactly what happened, just without the movement.
+ *
+ * The hit number is the one that changes character rather than just holding
+ * still: with no animation to carry it away, it stays put as a static "last
+ * award" badge that updates on each correct answer. That is deliberate — the
+ * alternative is hiding the reward from exactly the people who opted out of
+ * watching it fly.
  */
 @media (prefers-reduced-motion: reduce) {
   .anim-hit,
@@ -81,7 +87,10 @@ body {
   .anim-quiet {
     animation: none !important;
   }
-  .anim-hit { opacity: 1; }
+  .anim-hit {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* KaTeX inherits the pixel palette rather than its own serif defaults. */
