@@ -304,6 +304,33 @@ describe("session — the pause", () => {
   });
 });
 
+describe("content bank — sized for a real session", () => {
+  it("has enough questions to run a full session without repeating", () => {
+    let s = startSession(pool, 0);
+    const served: string[] = [];
+
+    for (let i = 0; i < pool.length; i++) {
+      served.push(s.current!.id);
+      s = submitAnswer(s, s.current!.canonicalAnswer, pool, i * 1000);
+    }
+
+    // A 20-30 question session is the stated target, and recycling questions
+    // inside one would turn the mastery gate into a memory test.
+    expect(new Set(served).size).toBe(pool.length);
+    expect(pool.length).toBeGreaterThanOrEqual(30);
+  });
+
+  it("carries enough depth at every tier for the selector to work", () => {
+    for (const tier of [1, 2, 3, 4, 5]) {
+      const atTier = pool.filter((q) => q.tier === tier);
+      expect(atTier.length, `tier ${tier} has no questions`).toBeGreaterThan(0);
+    }
+    // Difficulty should bunch in the middle, not sit flat.
+    const mid = pool.filter((q) => q.tier === 2 || q.tier === 3).length;
+    expect(mid).toBeGreaterThan(pool.length / 2);
+  });
+});
+
 describe("session — end to end", () => {
   it("runs a full grind without ever dead-ending", () => {
     let s = startSession(pool, 0);

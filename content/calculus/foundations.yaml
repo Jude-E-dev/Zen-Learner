@@ -1,0 +1,78 @@
+questions:
+  - id: power-rule-polynomial
+    topic: calculus
+    subtopic: power rule
+    tier: 1
+    prompt: 'Differentiate: $f(x) = 4x^3 - 2x + 7$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '12x^2 - 2'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Differentiate term by term. For $4x^3$, multiply by the exponent and drop it by one.'
+        result: '12x^2'
+      - step: 'The derivative of $-2x$ is $-2$, and the derivative of any constant is zero, so the $7$ contributes nothing.'
+        result: '12x^2 - 2'
+    hints:
+      - 'Each term can be handled on its own. What does the power rule do to $4x^3$?'
+      - 'You have the $12x^2$. What do the other two terms contribute?'
+      - 'A constant does not change as $x$ changes. What is the derivative of $7$?'
+    misconceptions:
+      - id: kept-the-constant
+        description: 'Differentiated the variable terms correctly but carried the constant through instead of dropping it.'
+        wrongAnswer: '12x^2 - 2 + 7'
+      - id: forgot-coefficient
+        description: 'Dropped the exponent by one but never multiplied the coefficient by the original exponent.'
+        wrongAnswer: '4x^2 - 2'
+
+  - id: chain-rule-exponential
+    topic: calculus
+    subtopic: chain rule
+    tier: 1
+    prompt: 'Differentiate: $f(x) = e^{2x}$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '2e^(2x)'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The derivative of $e^{u}$ is $e^{u}$ times the derivative of $u$, and here $u = 2x$.'
+        result: 'e^(2x)'
+      - step: 'The derivative of $2x$ is $2$, so multiply through by it.'
+        result: '2e^(2x)'
+    hints:
+      - 'The exponential is famous for being its own derivative. Is that the whole story when the exponent is not simply $x$?'
+      - 'You kept the $e^{2x}$. What does the exponent contribute?'
+      - 'The derivative of $2x$ is $2$. Where does that factor go?'
+    misconceptions:
+      - id: forgot-inner-derivative
+        description: 'Treated the exponential as its own derivative without accounting for the inner function.'
+        wrongAnswer: 'e^(2x)'
+      - id: differentiated-exponent-wrong
+        description: 'Brought the exponent down as written instead of differentiating it.'
+        wrongAnswer: '2x*e^(2x)'
+
+  - id: antiderivative-power-basic
+    topic: calculus
+    subtopic: antiderivatives
+    tier: 1
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int x^{3}\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'x^4/4'
+    acceptedForms: ['0.25*x^4']
+    workedSolution:
+      - step: 'Integration reverses the power rule: raise the exponent by one, then divide by the new exponent.'
+        result: 'x^4/4'
+      - step: 'Raising $3$ to $4$ and dividing by $4$ gives the antiderivative, plus a constant of integration.'
+        result: 'x^4/4'
+    hints:
+      - 'Integration undoes differentiation. If differentiating lowers a power, what does integrating do to it?'
+      - 'You raised the power to $4$. Differentiating $x^4$ would give $4x^3$, which is four times too big. How do you fix that?'
+      - 'Divide by the new exponent. What do you get?'
+    misconceptions:
+      - id: differentiated-instead
+        description: 'Applied the derivative power rule rather than integrating.'
+        wrongAnswer: '3x^2'
+      - id: forgot-to-divide
+        description: 'Raised the exponent correctly but never divided by the new exponent.'
+        wrongAnswer: 'x^4'

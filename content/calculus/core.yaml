@@ -1,0 +1,262 @@
+questions:
+  - id: product-rule-x-lnx
+    topic: calculus
+    subtopic: product rule
+    tier: 2
+    prompt: 'Differentiate: $f(x) = x\ln(x)$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: 'ln(x) + 1'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Two factors multiplied, so use the product rule with $u = x$ and $v = \ln(x)$.'
+      - step: 'The derivative of $u$ is $1$, and the derivative of $\ln(x)$ is $\frac{1}{x}$, giving $\ln(x) + x\cdot\frac{1}{x}$.'
+        result: 'ln(x) + 1'
+    hints:
+      - 'Two things multiplied together. Does differentiating each one separately give the right answer here?'
+      - 'The product rule leaves one factor whole in each term. What is the first term when $x$ is differentiated?'
+      - 'The second term is $x$ times the derivative of $\ln(x)$. What does $x\cdot\frac{1}{x}$ simplify to?'
+    misconceptions:
+      - id: product-of-derivatives
+        description: 'Multiplied the two derivatives together instead of applying the product rule.'
+        wrongAnswer: '1/x'
+      - id: dropped-second-term
+        description: 'Wrote the first product-rule term and stopped.'
+        wrongAnswer: 'ln(x)'
+
+  - id: power-rule-negative-exponent
+    topic: calculus
+    subtopic: power rule
+    tier: 2
+    prompt: 'Differentiate: $f(x) = \dfrac{1}{x^{2}}$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '-2/x^3'
+    acceptedForms: ['-2*x^(-3)']
+    workedSolution:
+      - step: 'Rewrite the fraction as a power so the power rule applies: $x^{-2}$.'
+        result: 'x^(-2)'
+      - step: 'Multiply by the exponent and drop it by one: $-2x^{-3}$.'
+        result: '-2/x^3'
+    hints:
+      - 'The quotient rule works here, but there is a faster route. Can you write this as a power of $x$?'
+      - 'As $x^{-2}$, what does the power rule give?'
+      - 'Dropping $-2$ by one gives $-3$. What does $-2x^{-3}$ look like as a fraction?'
+    misconceptions:
+      - id: sign-error
+        description: 'Applied the power rule but lost the minus sign from the negative exponent.'
+        wrongAnswer: '2/x^3'
+      - id: wrong-new-exponent
+        description: 'Increased the exponent instead of decreasing it when the exponent was negative.'
+        wrongAnswer: '-2/x'
+
+  - id: definite-sin-zero-pi
+    topic: calculus
+    subtopic: definite integrals
+    tier: 2
+    prompt: 'Evaluate: $\displaystyle\int_{0}^{\pi} \sin(x)\,dx$'
+    answerType: number
+    variables: []
+    canonicalAnswer: '2'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The antiderivative of $\sin(x)$ is $-\cos(x)$.'
+        result: '-cos(x)'
+      - step: 'Apply the bounds: $-\cos(\pi) - (-\cos(0)) = 1 + 1$.'
+        result: '2'
+    hints:
+      - 'What is the antiderivative of $\sin(x)$? Watch the sign carefully.'
+      - 'You have $-\cos(x)$. What are its values at $\pi$ and at $0$?'
+      - '$\cos(\pi) = -1$ and $\cos(0) = 1$. Substitute carefully and mind the double negative.'
+    misconceptions:
+      - id: assumed-symmetry-cancels
+        description: 'Assumed the sine wave cancels over this interval, as it would over a full period.'
+        wrongAnswer: '0'
+      - id: sign-error
+        description: 'Lost a sign when applying the bounds to the negative cosine.'
+        wrongAnswer: '-2'
+
+  - id: limit-factorable
+    topic: calculus
+    subtopic: limits
+    tier: 2
+    prompt: 'Evaluate: $\displaystyle\lim_{x \to 2} \frac{x^{2} - 4}{x - 2}$'
+    answerType: number
+    variables: []
+    canonicalAnswer: '4'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Substituting directly gives $\frac{0}{0}$, which is indeterminate, so the expression needs simplifying first.'
+      - step: 'Factor the numerator as $(x-2)(x+2)$ and cancel the common factor, leaving $x + 2$. Now substitute.'
+        result: '4'
+    hints:
+      - 'What happens when you substitute $x = 2$ directly? Does that tell you the limit does not exist?'
+      - 'The numerator is a difference of two squares. What does it factor into?'
+      - 'After cancelling $(x-2)$ you are left with $x+2$. What is that at $x = 2$?'
+    misconceptions:
+      - id: evaluated-numerator-only
+        description: 'Substituted into the numerator and reported zero, ignoring the indeterminate form.'
+        wrongAnswer: '0'
+      - id: called-it-undefined
+        description: 'Saw division by zero and concluded the limit does not exist.'
+        wrongAnswer: 'dne'
+
+  - id: product-chain-combo
+    topic: calculus
+    subtopic: product rule
+    tier: 3
+    prompt: 'Differentiate: $f(x) = x^{2}e^{3x}$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '2x*e^(3x) + 3x^2*e^(3x)'
+    acceptedForms: ['e^(3x)*(2x + 3x^2)']
+    workedSolution:
+      - step: 'This needs the product rule, and the second factor also needs the chain rule.'
+      - step: 'With $u = x^2$ and $v = e^{3x}$: the derivative of $u$ is $2x$, and the derivative of $v$ is $3e^{3x}$.'
+      - step: 'Assemble: $2xe^{3x} + x^{2}\cdot 3e^{3x}$.'
+        result: '2x*e^(3x) + 3x^2*e^(3x)'
+    hints:
+      - 'There are two rules at work here, not one. Which two?'
+      - 'You have the product rule set up. What is the derivative of $e^{3x}$ on its own?'
+      - 'The exponent $3x$ contributes a factor of $3$. Which term does it land in?'
+    misconceptions:
+      - id: forgot-inner-derivative
+        description: 'Applied the product rule correctly but never applied the chain rule to the exponential.'
+        wrongAnswer: '2x*e^(3x) + x^2*e^(3x)'
+      - id: product-of-derivatives
+        description: 'Multiplied the two derivatives together rather than applying the product rule.'
+        wrongAnswer: '2x*3*e^(3x)'
+
+  - id: implicit-diff-mixed
+    topic: calculus
+    subtopic: implicit differentiation
+    tier: 3
+    prompt: 'Given $x^{2} + xy + y^{2} = 7$, find $\dfrac{dy}{dx}$.'
+    answerType: expression
+    variables: [x, y]
+    canonicalAnswer: '-(2x + y)/(x + 2y)'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Differentiate every term with respect to $x$. The $xy$ term needs the product rule, and every $y$ carries a $\frac{dy}{dx}$.'
+        result: '2x + y + x*(dy/dx) + 2y*(dy/dx)'
+      - step: 'Collect the $\frac{dy}{dx}$ terms on one side: $\frac{dy}{dx}(x + 2y) = -(2x + y)$.'
+      - step: 'Divide through to isolate the derivative.'
+        result: '-(2x + y)/(x + 2y)'
+    hints:
+      - 'The $xy$ term is a product of two things that both depend on $x$. Which rule does that need?'
+      - 'You have all the terms. Which of them contain $\frac{dy}{dx}$, and what happens if you group them?'
+      - 'Factoring gives $\frac{dy}{dx}(x + 2y)$. What is left on the other side?'
+    misconceptions:
+      - id: sign-error
+        description: 'Isolated the derivative but did not carry the negative across.'
+        wrongAnswer: '(2x + y)/(x + 2y)'
+      - id: missed-product-rule
+        description: 'Differentiated the xy term without the product rule, losing the y and the x contributions.'
+        wrongAnswer: '-(2x)/(2y)'
+
+  - id: u-sub-reciprocal-log
+    topic: calculus
+    subtopic: u-substitution
+    tier: 3
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int \frac{1}{x\ln(x)}\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'ln(ln(x))'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Look for a function whose derivative also appears. The derivative of $\ln(x)$ is $\frac{1}{x}$, and there is a $\frac{1}{x}$ here.'
+      - step: 'Let $u = \ln(x)$, so $du = \frac{1}{x}dx$ and the integral becomes $\int \frac{1}{u}\,du$.'
+        result: 'ln(ln(x))'
+      - step: 'That integrates to $\ln|u|$. Substitute back and add the constant of integration.'
+        result: 'ln(ln(x))'
+    hints:
+      - 'One part of this integrand is the derivative of another part. Which pair?'
+      - 'With $u = \ln(x)$, what does the whole integral become in terms of $u$?'
+      - 'You are integrating $\frac{1}{u}$. What is its antiderivative, and what is $u$ again?'
+    misconceptions:
+      - id: integrated-outer-only
+        description: 'Integrated as though the whole denominator were the variable, giving a power rather than a logarithm.'
+        wrongAnswer: 'ln(x)^2/2'
+      - id: treated-as-reciprocal
+        description: 'Reported the reciprocal of the logarithm rather than the logarithm of the logarithm.'
+        wrongAnswer: '1/ln(x)'
+
+  - id: parts-x2-exp
+    topic: calculus
+    subtopic: integration by parts
+    tier: 3
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int x^{2}e^{x}\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'x^2*e^x - 2x*e^x + 2e^x'
+    acceptedForms: ['e^x*(x^2 - 2x + 2)']
+    workedSolution:
+      - step: 'Integration by parts with $u = x^2$, since differentiating it twice will clear the polynomial entirely.'
+      - step: 'The first pass gives $x^{2}e^{x} - \int 2xe^{x}dx$, and the remaining integral needs parts a second time.'
+        result: 'x^2*e^x - 2x*e^x + 2e^x'
+      - step: 'The second pass gives $2xe^{x} - 2e^{x}$, which is subtracted, and the constant of integration is added.'
+        result: 'x^2*e^x - 2x*e^x + 2e^x'
+    hints:
+      - 'Parts will work here, but one application will not be enough. Why not?'
+      - 'After the first pass you have $x^{2}e^{x} - \int 2xe^{x}dx$. What do you do with that remaining integral?'
+      - 'The second application gives $2xe^{x} - 2e^{x}$. Careful with the sign when you subtract it.'
+    misconceptions:
+      - id: stopped-one-pass-early
+        description: 'Applied integration by parts once and treated the remaining integral as finished.'
+        wrongAnswer: 'x^2*e^x - 2x*e^x'
+      - id: sign-error
+        description: 'Added the second-pass terms instead of subtracting them.'
+        wrongAnswer: 'x^2*e^x + 2x*e^x + 2e^x'
+
+  - id: quotient-rule-trig
+    topic: calculus
+    subtopic: quotient rule
+    tier: 3
+    prompt: 'Differentiate: $f(x) = \dfrac{\sin(x)}{x}$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '(x*cos(x) - sin(x))/x^2'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Quotient rule with $u = \sin(x)$ and $v = x$, so the derivative of $u$ is $\cos(x)$ and of $v$ is $1$.'
+      - step: 'The numerator is (derivative of $u$) times $v$ minus $u$ times (derivative of $v$): $x\cos(x) - \sin(x)$.'
+        result: 'x*cos(x) - sin(x)'
+      - step: 'Divide by $v$ squared.'
+        result: '(x*cos(x) - sin(x))/x^2'
+    hints:
+      - 'Which goes first in the quotient rule numerator, the term with the derivative of the top or of the bottom?'
+      - 'You have both pieces. What is $\cos(x)\cdot x - \sin(x)\cdot 1$?'
+      - 'The denominator does not survive unchanged. What happens to it?'
+    misconceptions:
+      - id: reversed-numerator
+        description: 'Subtracted in the wrong order, producing the negative of the correct numerator.'
+        wrongAnswer: '(sin(x) - x*cos(x))/x^2'
+      - id: quotient-of-derivatives
+        description: 'Divided the derivatives instead of applying the quotient rule.'
+        wrongAnswer: 'cos(x)'
+
+  - id: definite-parts-zero-one
+    topic: calculus
+    subtopic: definite integrals
+    tier: 3
+    prompt: 'Evaluate: $\displaystyle\int_{0}^{1} x e^{x}\,dx$'
+    answerType: number
+    variables: []
+    canonicalAnswer: '1'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Find the antiderivative by parts first: $xe^{x} - e^{x}$.'
+        result: 'x*e^x - e^x'
+      - step: 'Apply the bounds: $(e - e) - (0 - 1)$.'
+        result: '1'
+    hints:
+      - 'Before the bounds matter, what technique gives the antiderivative of $xe^{x}$?'
+      - 'The antiderivative is $xe^{x} - e^{x}$. What is it at $x = 1$?'
+      - 'At $x = 1$ the two terms cancel exactly. So what is left once you subtract the value at $x = 0$?'
+    misconceptions:
+      - id: bounds-upper-only
+        description: 'Evaluated at the upper bound and forgot to subtract the value at the lower bound.'
+        wrongAnswer: '0'
+      - id: dropped-a-term
+        description: 'Used an incomplete antiderivative, leaving an e where the terms should have cancelled.'
+        wrongAnswer: 'e - 1'

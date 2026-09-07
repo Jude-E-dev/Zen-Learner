@@ -1,0 +1,185 @@
+questions:
+  - id: implicit-diff-trig
+    topic: calculus
+    subtopic: implicit differentiation
+    tier: 4
+    prompt: 'Given $\sin(y) + x^{2} = y$, find $\dfrac{dy}{dx}$.'
+    answerType: expression
+    variables: [x, y]
+    canonicalAnswer: '2x/(1 - cos(y))'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Differentiate both sides with respect to $x$. The $\sin(y)$ term needs the chain rule and carries a $\frac{dy}{dx}$.'
+        result: 'cos(y)*(dy/dx) + 2x'
+      - step: 'The right-hand side differentiates to $\frac{dy}{dx}$, so gather those terms: $2x = \frac{dy}{dx}(1 - \cos(y))$.'
+      - step: 'Divide through to isolate the derivative.'
+        result: '2x/(1 - cos(y))'
+    hints:
+      - 'Differentiating $\sin(y)$ with respect to $x$ is not simply $\cos(y)$. What does the chain rule add?'
+      - 'Both sides now contain $\frac{dy}{dx}$. What happens if you move them together?'
+      - 'Factoring gives $\frac{dy}{dx}(1 - \cos(y))$. What is on the other side?'
+    misconceptions:
+      - id: sign-error
+        description: 'Gathered the derivative terms but flipped the sign of the resulting denominator.'
+        wrongAnswer: '2x/(cos(y) - 1)'
+      - id: wrong-sign-on-cosine
+        description: 'Added the cosine term instead of subtracting it when collecting the derivative.'
+        wrongAnswer: '2x/(1 + cos(y))'
+
+  - id: chain-rule-nested-twice
+    topic: calculus
+    subtopic: chain rule
+    tier: 4
+    prompt: 'Differentiate: $f(x) = \sin(\cos(x^{2}))$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '-2x*sin(x^2)*cos(cos(x^2))'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Three functions are nested here: sine outside, cosine in the middle, and $x^2$ innermost. The chain rule applies twice.'
+      - step: 'Differentiate the outer sine, keeping the inside: $\cos(\cos(x^{2}))$.'
+        result: 'cos(cos(x^2))'
+      - step: 'Multiply by the derivative of $\cos(x^{2})$, which is $-\sin(x^{2})\cdot 2x$.'
+        result: '-2x*sin(x^2)*cos(cos(x^2))'
+    hints:
+      - 'Count the layers before you differentiate anything. How many functions are nested here?'
+      - 'You have $\cos(\cos(x^{2}))$ from the outer layer. What is the derivative of the middle layer?'
+      - 'The derivative of $\cos(x^{2})$ needs the chain rule too. What does the innermost $x^{2}$ contribute?'
+    misconceptions:
+      - id: forgot-inner-derivative
+        description: 'Differentiated the outermost function only, ignoring both inner layers.'
+        wrongAnswer: 'cos(cos(x^2))'
+      - id: dropped-outer-factor
+        description: 'Differentiated the inner layers but lost the outer cosine factor.'
+        wrongAnswer: '-2x*sin(x^2)'
+
+  - id: u-sub-trig-power
+    topic: calculus
+    subtopic: u-substitution
+    tier: 4
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int \sin^{3}(x)\cos(x)\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'sin(x)^4/4'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The $\cos(x)$ is exactly the derivative of $\sin(x)$, which is the substitution this is asking for.'
+      - step: 'Let $u = \sin(x)$, so $du = \cos(x)dx$ and the integral becomes $\int u^{3}\,du$.'
+        result: 'sin(x)^4/4'
+      - step: 'Apply the power rule for integration and substitute back, adding the constant of integration.'
+        result: 'sin(x)^4/4'
+    hints:
+      - 'One factor here is the derivative of a function appearing in the other. Which one?'
+      - 'With $u = \sin(x)$, what does the integral become?'
+      - 'You are integrating $u^{3}$. Raise the power and divide, then put $\sin(x)$ back.'
+    misconceptions:
+      - id: forgot-to-divide
+        description: 'Raised the power correctly but never divided by the new exponent.'
+        wrongAnswer: 'sin(x)^4'
+      - id: substituted-wrong-function
+        description: 'Substituted for the cosine instead of the sine, integrating the wrong factor.'
+        wrongAnswer: 'cos(x)^4/4'
+
+  - id: limit-series-order
+    topic: calculus
+    subtopic: limits
+    tier: 4
+    prompt: 'Evaluate: $\displaystyle\lim_{x \to 0} \frac{e^{x} - 1 - x}{x^{2}}$'
+    answerType: number
+    variables: []
+    canonicalAnswer: '1/2'
+    acceptedForms: ['0.5']
+    workedSolution:
+      - step: 'Substituting gives $\frac{0}{0}$, so this needs more than direct evaluation.'
+      - step: 'Near zero, $e^{x}$ behaves like $1 + x + \frac{x^{2}}{2}$, so the numerator behaves like $\frac{x^{2}}{2}$.'
+      - step: 'Dividing by $x^{2}$ leaves $\frac{1}{2}$. Two applications of l Hopital rule give the same result.'
+        result: '1/2'
+    hints:
+      - 'Direct substitution gives $\frac{0}{0}$. Does that mean the limit fails to exist?'
+      - 'The numerator subtracts off the first two terms of the exponential. What is the next term after $1 + x$?'
+      - 'If the numerator behaves like $\frac{x^{2}}{2}$ near zero, what happens when you divide by $x^{2}$?'
+    misconceptions:
+      - id: evaluated-numerator-only
+        description: 'Substituted into the numerator and reported zero, ignoring the indeterminate form.'
+        wrongAnswer: '0'
+      - id: stopped-one-order-early
+        description: 'Applied l Hopital rule once and stopped, before the form resolved.'
+        wrongAnswer: '1'
+
+  - id: implicit-second-derivative
+    topic: calculus
+    subtopic: implicit differentiation
+    tier: 5
+    prompt: 'For the circle $x^{2} + y^{2} = 25$, find $\dfrac{d^{2}y}{dx^{2}}$ in terms of $y$.'
+    answerType: expression
+    variables: [y]
+    canonicalAnswer: '-25/y^3'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The first derivative is $\frac{dy}{dx} = -\frac{x}{y}$, from differentiating the circle implicitly.'
+        result: '-x/y'
+      - step: 'Differentiate again with the quotient rule, remembering that $y$ depends on $x$: this gives $-\frac{y - x\frac{dy}{dx}}{y^{2}}$.'
+      - step: 'Substitute $\frac{dy}{dx} = -\frac{x}{y}$ to get $-\frac{y + \frac{x^{2}}{y}}{y^{2}}$, then use $x^{2} + y^{2} = 25$ to collapse the numerator.'
+        result: '-25/y^3'
+    hints:
+      - 'You will need the first derivative before the second. What is $\frac{dy}{dx}$ for this circle?'
+      - 'Differentiating $-\frac{x}{y}$ needs the quotient rule, and $y$ is not a constant. What does that add?'
+      - 'You have $-\frac{y^{2} + x^{2}}{y^{3}}$. The original equation tells you what $x^{2} + y^{2}$ equals.'
+    misconceptions:
+      - id: sign-error
+        description: 'Reached the right magnitude but lost the overall negative sign.'
+        wrongAnswer: '25/y^3'
+      - id: never-substituted-circle
+        description: 'Stopped before using the original equation to replace the sum of squares.'
+        wrongAnswer: '-1/y^3'
+
+  - id: parts-cyclic-exp-sin
+    topic: calculus
+    subtopic: integration by parts
+    tier: 5
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int e^{x}\sin(x)\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'e^x*(sin(x) - cos(x))/2'
+    acceptedForms: ['(e^x*sin(x) - e^x*cos(x))/2']
+    workedSolution:
+      - step: 'Neither factor simplifies when differentiated, so parts will cycle rather than terminate. Apply it anyway and watch what returns.'
+      - step: 'Two applications bring back the original integral: $I = e^{x}\sin(x) - e^{x}\cos(x) - I$.'
+      - step: 'Solve for $I$ algebraically by adding it to both sides and halving, then add the constant of integration.'
+        result: 'e^x*(sin(x) - cos(x))/2'
+    hints:
+      - 'Differentiating either factor gets you nowhere simpler. What does that tell you about how parts will behave here?'
+      - 'After two applications the original integral has reappeared. Is that a dead end, or is it useful?'
+      - 'You have $I$ on both sides of an equation. Treat it as algebra rather than calculus and solve for it.'
+    misconceptions:
+      - id: sign-error
+        description: 'Solved the cyclic equation but added the cosine term instead of subtracting it.'
+        wrongAnswer: 'e^x*(sin(x) + cos(x))/2'
+      - id: forgot-to-halve
+        description: 'Reached the cyclic equation but never divided by two when solving for the integral.'
+        wrongAnswer: 'e^x*(sin(x) - cos(x))'
+
+  - id: limit-definition-of-e
+    topic: calculus
+    subtopic: limits
+    tier: 5
+    prompt: 'Evaluate: $\displaystyle\lim_{x \to \infty} \left(1 + \frac{1}{x}\right)^{x}$'
+    answerType: number
+    variables: []
+    canonicalAnswer: 'e'
+    acceptedForms: ['exp(1)']
+    workedSolution:
+      - step: 'The base tends to $1$ and the exponent tends to infinity, which is the indeterminate form $1^{\infty}$ rather than simply $1$.'
+      - step: 'Take logarithms: $x\ln(1 + \frac{1}{x})$ tends to $1$, so the original expression tends to $e^{1}$.'
+        result: 'e'
+    hints:
+      - 'The inside approaches $1$. Does that settle it, given the exponent is growing without bound?'
+      - 'This is the indeterminate form $1^{\infty}$. What happens if you take the logarithm first?'
+      - 'The logarithm of the expression approaches $1$. So what does the expression itself approach?'
+    misconceptions:
+      - id: assumed-one-to-any-power
+        description: 'Reasoned that one raised to any power is one, missing the indeterminate form.'
+        wrongAnswer: '1'
+      - id: assumed-divergence
+        description: 'Assumed a growing exponent forces the whole expression to diverge.'
+        wrongAnswer: 'infinity'
