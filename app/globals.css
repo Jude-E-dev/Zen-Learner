@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/*
+ * 16-bit ronin practice hall.
+ *
+ * Everything sits on an integer pixel grid with hard edges and no gradients.
+ * Blur reads as cheap immediately, so borders are solid, shadows are offset
+ * blocks rather than soft glows, and nothing scales fractionally.
+ */
+
+@theme {
+  --color-ink: #0e0f14;
+  --color-ink-soft: #171a23;
+  --color-ink-line: #2a2f3d;
+  --color-paper: #e8e4d9;
+  --color-paper-dim: #9a978d;
+  --color-jade: #4ade80;
+  --color-jade-deep: #16643a;
+  --color-blood: #e5484d;
+  --color-gold: #f5b544;
+  --color-indigo: #6366f1;
+
+  --font-pixel: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-pixel);
+  /* Integer scaling only. No blurry upscaling anywhere. */
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* Chunky offset block instead of a soft drop shadow. */
+.pixel-frame {
+  border: 2px solid var(--color-ink-line);
+  box-shadow: 4px 4px 0 0 var(--color-ink-soft);
+}
+
+.pixel-frame-hot {
+  border: 2px solid var(--color-jade-deep);
+  box-shadow: 4px 4px 0 0 var(--color-jade-deep);
+}
+
+/* The damage number that punches on a correct answer. */
+@keyframes hit-pop {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  30% { transform: translate(0, -10px) scale(1.15); opacity: 1; }
+  100% { transform: translate(0, -26px) scale(1); opacity: 0; }
+}
+
+@keyframes miss-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+@keyframes quiet-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.anim-hit { animation: hit-pop 700ms steps(12, end) forwards; }
+.anim-miss { animation: miss-shake 180ms steps(4, end) 1; }
+.anim-quiet { animation: quiet-in 260ms steps(6, end) both; }
+
+/*
+ * Reduced motion cuts the shake and the particles but never the state change.
+ * The learner still sees exactly what happened, just without the movement.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .anim-hit,
+  .anim-miss,
+  .anim-quiet {
+    animation: none !important;
+  }
+  .anim-hit { opacity: 1; }
+}
+
+/* KaTeX inherits the pixel palette rather than its own serif defaults. */
+.katex { font-size: 1.05em; }
