@@ -39,7 +39,11 @@ const PALETTE: Record<string, string> = {
  * near-black, which at this scale just looked like a gap between the hat and
  * the shoulders.
  */
-const RONIN = [
+/*
+ * Split at the hips so the idle breath can lift the torso while the feet stay
+ * planted. Lifting the whole figure reads as hopping, not breathing.
+ */
+const RONIN_UPPER = [
   ".......KKKKKK.......",
   ".....KKKKKKKKKK.....",
   "...KKKKKKKKKKKKKK...",
@@ -57,6 +61,16 @@ const RONIN = [
   "....gHHHHHHHHHHg....",
   ".....HHHHHHHHHH.....",
   ".....hHHHHHHHHh.....",
+];
+
+/*
+ * The first row is a duplicate of the leg tops, drawn one pixel high so it
+ * tucks under the haori at rest. The legs paint before the torso, so at rest
+ * that row is hidden; when the breath lifts the torso it is what fills the
+ * gap, instead of a slit of back wall opening across the hips.
+ */
+const RONIN_LOWER = [
+  ".....LLLL..LLLL.....",
   ".....LLLL..LLLL.....",
   ".....LLLL..LLLL.....",
   ".....LLLL..LLLL.....",
@@ -179,8 +193,34 @@ export function Dojo({
         />
         <rect x="164" y="21" width="5" height="1" fill="#2a2f3d" />
 
-        {/* Feet land on the floor line at y=52. */}
-        <PixelArt map={RONIN} x={50} y={8} />
+        {/*
+          The ronin. The whole figure plus the blade it holds sit in one group
+          so a strike drives them forward together — animating the blade alone
+          read as a sword swinging by itself, with the swordsman inert.
+
+          Feet land on the floor line at y=52.
+        */}
+        <g
+          className={
+            mood === "strike" ? "anim-lunge" : mood === "miss" ? "anim-flinch" : ""
+          }
+        >
+          <PixelArt map={RONIN_LOWER} x={50} y={40} />
+          <g className="anim-breathe">
+            <PixelArt map={RONIN_UPPER} x={50} y={8} />
+          </g>
+
+          {/* The blade, held at the right hand (x=80, y=36) and swinging through
+              it on a landed strike. */}
+          <g
+            className={mood === "strike" ? "anim-slash" : ""}
+            style={{ transformOrigin: "80px 36px" }}
+          >
+            <rect x="76" y="35" width="6" height="2" fill="#7a5a3a" />
+            <rect x="82" y="35" width="26" height="2" fill="#cfd6e6" />
+            <rect x="82" y="37" width="26" height="1" fill="#8e97ab" />
+          </g>
+        </g>
 
         {/* The post takes the hit, so it is what recoils. */}
         <g
@@ -189,17 +229,6 @@ export function Dojo({
           }
         >
           <PixelArt map={POST} x={116} y={18} />
-        </g>
-
-        {/* The blade, held at the right hand (x=80, y=36) and swinging through
-            it on a landed strike. */}
-        <g
-          className={mood === "strike" ? "anim-slash" : ""}
-          style={{ transformOrigin: "80px 36px" }}
-        >
-          <rect x="76" y="35" width="6" height="2" fill="#7a5a3a" />
-          <rect x="82" y="35" width="26" height="2" fill="#cfd6e6" />
-          <rect x="82" y="37" width="26" height="1" fill="#8e97ab" />
         </g>
 
         {/* The contact arc, drawn only at the moment of the hit. */}

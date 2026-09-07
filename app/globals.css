@@ -89,6 +89,33 @@ body {
   60% { transform: translateX(-2px); }
 }
 
+/*
+ * The idle breath. Two frames, a pixel apart, held for a beat each — a smooth
+ * tween would read as the wrong era. This is the only looping animation in the
+ * app; everything else fires once on a state change.
+ */
+@keyframes breathe {
+  0%, 49.9% { transform: translateY(0); }
+  50%, 100% { transform: translateY(-2px); }
+}
+
+/* The ronin drives forward into a landed strike, then recovers. */
+@keyframes lunge {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(6px); }
+  60% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+/* A wrong answer pushes the ronin back off the post rather than shaking it. */
+@keyframes flinch {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-4px); }
+}
+
+.anim-breathe { animation: breathe 2600ms step-end infinite; }
+.anim-lunge { animation: lunge 420ms steps(4, end) 1; }
+.anim-flinch { animation: flinch 180ms steps(3, end) 1; }
 .anim-hit { animation: hit-pop 700ms steps(12, end) forwards; }
 .anim-miss { animation: miss-shake 180ms steps(4, end) 1; }
 .anim-quiet { animation: quiet-in 260ms steps(6, end) both; }
@@ -99,6 +126,11 @@ body {
 /*
  * Reduced motion cuts the shake and the drift but never the state change. The
  * learner still sees exactly what happened, just without the movement.
+ *
+ * The idle breath is the one animation that never stops on its own, so it is
+ * the one that most needs cutting here. With it off the ronin holds the rest
+ * pose, and the duplicated leg row stays tucked under the haori where it
+ * belongs.
  *
  * The hit number is the one that changes character rather than just holding
  * still: with no animation to carry it away, it stays put as a static "last
@@ -112,7 +144,10 @@ body {
   .anim-quiet,
   .anim-slash,
   .anim-arc,
-  .anim-recoil {
+  .anim-recoil,
+  .anim-breathe,
+  .anim-lunge,
+  .anim-flinch {
     animation: none !important;
   }
   .anim-hit {
