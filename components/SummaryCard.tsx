@@ -2,6 +2,7 @@
 
 import type { SessionState } from "@/lib/game/session";
 import { MAX_TIER } from "@/lib/game/selector";
+import type { RankProgress } from "@/lib/game/ranks";
 
 /**
  * The post-session card, composed to be screenshotted.
@@ -13,9 +14,13 @@ import { MAX_TIER } from "@/lib/game/selector";
  */
 export function SummaryCard({
   state,
+  rank,
+  sessionNumber,
   onRestart,
 }: {
   state: SessionState;
+  rank: RankProgress;
+  sessionNumber: number;
   onRestart: () => void;
 }) {
   const { answered, correct, xp, bestStreak, selector, events } = state;
@@ -33,11 +38,17 @@ export function SummaryCard({
         className="pixel-frame bg-ink-soft flex aspect-square w-full max-w-[420px] flex-col justify-between p-7"
         data-testid="summary-card"
       >
-        <div>
-          <p className="text-jade text-[10px] tracking-[0.3em]">ZEN MODE</p>
-          <p className="text-paper-dim mt-1 text-[10px] tracking-[0.2em]">
-            CALCULUS · SESSION COMPLETE
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-jade text-[10px] tracking-[0.3em]">ZEN MODE</p>
+            <p className="text-paper-dim mt-1 text-[10px] tracking-[0.2em]">
+              CALCULUS · SESSION {sessionNumber}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-paper-dim text-[10px] tracking-[0.2em]">RANK</p>
+            <p className="text-indigo text-lg leading-tight">{rank.current.name}</p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">

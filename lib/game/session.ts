@@ -185,6 +185,7 @@ export function submitAnswer(
       type: "answer_submitted",
       ts: now,
       questionId: q.id,
+      tier: q.tier,
       verdict: result.verdict,
       misconceptionId: result.misconceptionId,
       latencyMs: Math.max(0, now - state.attemptStartedAt),

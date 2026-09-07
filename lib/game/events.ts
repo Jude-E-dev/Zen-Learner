@@ -18,6 +18,8 @@ export type GameEvent =
       type: "answer_submitted";
       ts: number;
       questionId: string;
+      /** Carried on the event so mastery can be folded up without a lookup. */
+      tier: number;
       verdict: "correct" | "incorrect";
       misconceptionId?: string;
       /** Time on this attempt, excluding any pause. */

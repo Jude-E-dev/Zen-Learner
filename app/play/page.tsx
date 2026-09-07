@@ -18,6 +18,9 @@ import {
   submitAnswer,
   type SessionState,
 } from "@/lib/game/session";
+import { rankFor } from "@/lib/game/ranks";
+import { useProfile } from "@/lib/persistence/useProfile";
+import { masteryWithSession, downloadJsonl } from "@/lib/persistence/profile";
 
 const POOL = questionData as unknown as Question[];
 
@@ -36,11 +39,24 @@ export default function PlayPage() {
   const [state, setState] = useState<SessionState>(() => startSession(POOL));
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const { profile, durable, commitSession, exportEvents } = useProfile();
+  const committed = useRef<SessionState | null>(null);
 
   // Focus follows the loop, so typing always lands somewhere useful.
   useEffect(() => {
     if (state.phase !== "summary") inputRef.current?.focus();
   }, [state.phase, state.current?.id]);
+
+  // Persist once, when the session actually ends.
+  useEffect(() => {
+    if (state.phase !== "summary" || committed.current === state) return;
+    committed.current = state;
+    void commitSession(state);
+  }, [state, commitSession]);
+
+  // Rank is derived from lifetime mastery plus what has happened this session,
+  // so climbing a rank happens the moment it is earned rather than at the end.
+  const rank = rankFor(masteryWithSession(profile.mastery, state));
 
   function grade(from: SessionState, answer: string) {
     const before = from.lastAward?.seq ?? 0;
@@ -87,11 +103,27 @@ export default function PlayPage() {
 
   if (state.phase === "summary") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-5 py-10">
-        <SummaryCard state={state} onRestart={() => {
-          setState(startSession(POOL));
-          setInput("");
-        }} />
+      <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-6 px-5 py-10">
+        <SummaryCard
+          state={state}
+          rank={rank}
+          // The card is shown either side of the commit that increments this,
+          // so clamp rather than offset: 0 before, the real count after.
+          sessionNumber={Math.max(1, profile.sessions)}
+          onRestart={() => {
+            setState(startSession(POOL));
+            setInput("");
+          }}
+        />
+        {process.env.NODE_ENV === "development" && (
+          <button
+            type="button"
+            onClick={() => void exportEvents().then(downloadJsonl)}
+            className="text-paper-dim mx-auto text-[10px] tracking-widest hover:text-paper"
+          >
+            EXPORT EVENTS (.JSONL)
+          </button>
+        )}
       </main>
     );
   }
@@ -109,7 +141,14 @@ export default function PlayPage() {
       className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-5 py-8"
       onKeyDown={handleKeyDown}
     >
-      <Hud state={state} />
+      <Hud state={state} rank={rank} />
+
+      {!durable && (
+        <p className="pixel-frame border-gold/50 bg-ink-soft text-gold px-4 py-2 text-xs">
+          Storage is blocked in this browser, so progress won&apos;t be saved after
+          you close the tab. Everything else works normally.
+        </p>
+      )}
 
       <section
         className={`pixel-frame bg-ink-soft relative p-7 ${showMiss ? "anim-miss" : ""}`}

@@ -2,6 +2,7 @@
 
 import { MAX_TIER, PROMOTE_AFTER, DEMOTE_AFTER } from "@/lib/game/selector";
 import type { SessionState } from "@/lib/game/session";
+import type { RankProgress } from "@/lib/game/ranks";
 
 /**
  * Persistent HUD.
@@ -11,12 +12,22 @@ import type { SessionState } from "@/lib/game/session";
  * the model. A learner should be able to see "one more and I move up" without
  * being told.
  */
-export function Hud({ state }: { state: SessionState }) {
+export function Hud({
+  state,
+  rank,
+}: {
+  state: SessionState;
+  rank: RankProgress;
+}) {
   const { selector, xp, streak, answered, correct } = state;
   const accuracy = answered === 0 ? null : Math.round((correct / answered) * 100);
 
   return (
     <header className="pixel-frame bg-ink-soft flex flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3">
+      <Stat label="RANK">
+        <span className="text-indigo text-lg">{rank.current.name}</span>
+      </Stat>
+
       <Stat label="TIER">
         <span className="text-gold text-lg">{selector.tier}</span>
         <span className="text-paper-dim">/{MAX_TIER}</span>
@@ -37,6 +48,29 @@ export function Hud({ state }: { state: SessionState }) {
         <span className="tabular-nums">{accuracy === null ? "—" : `${accuracy}%`}</span>
         <span className="text-paper-dim ml-1 text-[10px]">({answered})</span>
       </Stat>
+
+      {/* What the next rank actually costs, in the terms it is measured in. */}
+      {rank.next && (
+        <Stat label={`TO ${rank.next.name.toUpperCase()}`}>
+          <span className="text-paper-dim text-xs">
+            <span className="text-paper tabular-nums">
+              {Math.min(rank.correct, rank.correctRequired)}/{rank.correctRequired}
+            </span>{" "}
+            correct at T{rank.next.tierFloor}+
+            <span className="text-ink-line mx-1">·</span>
+            <span
+              className={
+                rank.accuracy !== null && rank.accuracy >= rank.accuracyRequired
+                  ? "text-jade tabular-nums"
+                  : "text-paper tabular-nums"
+              }
+            >
+              {rank.accuracy === null ? "—" : `${Math.round(rank.accuracy * 100)}%`}
+            </span>
+            /{Math.round(rank.accuracyRequired * 100)}%
+          </span>
+        </Stat>
+      )}
 
       {/* The gate itself, made visible. */}
       <div className="ml-auto flex items-center gap-6">
