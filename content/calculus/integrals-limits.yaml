@@ -1,0 +1,105 @@
+questions:
+  - id: u-sub-2x-cos-x2
+    topic: calculus
+    subtopic: u-substitution
+    tier: 2
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int 2x\cos(x^2)\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'sin(x^2)'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Notice that $2x$ is exactly the derivative of $x^2$, which is the substitution this integral is asking for.'
+      - step: 'Let $u = x^2$, so $du = 2x\,dx$ and the integral becomes $\int \cos(u)\,du$.'
+        result: 'sin(x^2)'
+      - step: 'Integrate to get $\sin(u)$, then substitute back. Do not forget the constant of integration.'
+        result: 'sin(x^2)'
+    hints:
+      - 'Look at the two pieces of this integrand. Is one of them the derivative of something inside the other?'
+      - 'You spotted that $u = x^2$. What does $du$ equal, and does the $2x$ in front account for it exactly?'
+      - 'After substituting you are integrating $\cos(u)$. What is its antiderivative, and what do you replace $u$ with?'
+    misconceptions:
+      - id: divided-by-inner-derivative
+        description: 'Treated the 2x as something to divide out rather than as part of du.'
+        wrongAnswer: 'sin(x^2)/(2x)'
+      - id: kept-outer-factor
+        description: 'Integrated the cosine but left the 2x factor sitting outside the result.'
+        wrongAnswer: '2x*sin(x^2)'
+
+  - id: parts-x-exp-x
+    topic: calculus
+    subtopic: integration by parts
+    tier: 3
+    prompt: 'Evaluate the indefinite integral: $\displaystyle\int x e^{x}\,dx$'
+    answerType: antiderivative
+    variables: [x]
+    canonicalAnswer: 'x*e^x - e^x'
+    acceptedForms: ['e^x*(x - 1)']
+    workedSolution:
+      - step: 'A polynomial times an exponential is the signature of integration by parts. Choose $u = x$ so that differentiating it simplifies the problem.'
+      - step: 'With $u = x$ and $dv = e^{x}dx$, we get $du = dx$ and $v = e^{x}$, so the formula gives $xe^{x} - \int e^{x}dx$.'
+        result: 'x*e^x - e^x'
+      - step: 'Evaluate the remaining integral and add the constant of integration.'
+        result: 'x*e^x - e^x'
+    hints:
+      - 'Substitution will not crack this one. What technique handles a product where one factor gets simpler each time you differentiate it?'
+      - 'You are using parts. Which of $x$ and $e^{x}$ should be $u$, if the goal is a simpler integral afterwards?'
+      - 'You have reached $xe^{x} - \int e^{x}dx$. What is that last integral?'
+    misconceptions:
+      - id: sign-error
+        description: 'Applied integration by parts but added the second term instead of subtracting it.'
+        wrongAnswer: 'x*e^x + e^x'
+      - id: integrated-both-factors
+        description: 'Integrated each factor separately, as though the integral of a product were the product of integrals.'
+        wrongAnswer: 'x^2/2*e^x'
+
+  - id: definite-3x2-zero-one
+    topic: calculus
+    subtopic: definite integrals
+    tier: 2
+    prompt: 'Evaluate: $\displaystyle\int_{0}^{1} 3x^{2}\,dx$'
+    answerType: number
+    variables: []
+    canonicalAnswer: '1'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Find the antiderivative first: raise the power by one and divide, so $3x^2$ integrates to $x^3$.'
+        result: 'x^3'
+      - step: 'Apply the bounds: $1^3 - 0^3$.'
+        result: '1'
+    hints:
+      - 'Before the bounds matter at all, what is the antiderivative of $3x^{2}$?'
+      - 'You have the antiderivative. A definite integral is not finished until you do one more thing with the limits, so what is it?'
+      - 'Evaluate your antiderivative at $1$, then at $0$, and subtract. What number comes out?'
+    misconceptions:
+      - id: forgot-to-divide
+        description: 'Raised the power without dividing by the new exponent, then evaluated.'
+        wrongAnswer: '3'
+      - id: bounds-not-applied
+        description: 'Found the antiderivative correctly but never substituted the limits of integration.'
+        wrongAnswer: 'x^3'
+
+  - id: limit-sin-x-over-x
+    topic: calculus
+    subtopic: limits
+    tier: 2
+    prompt: 'Evaluate: $\displaystyle\lim_{x \to 0} \frac{\sin(x)}{x}$'
+    answerType: number
+    variables: []
+    canonicalAnswer: '1'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Substituting $x = 0$ directly gives $\frac{0}{0}$, which is indeterminate, so the limit is not simply the value at the point.'
+      - step: 'This is a standard limit: near zero, $\sin(x)$ and $x$ agree to first order, so their ratio approaches $1$.'
+        result: '1'
+    hints:
+      - 'What happens if you substitute $x = 0$ directly? Does the result tell you anything useful?'
+      - 'You have found $\frac{0}{0}$, which means the limit needs more work rather than that it does not exist. How does $\sin(x)$ behave for very small $x$?'
+      - 'For small $x$, $\sin(x)$ is very nearly $x$ itself. What does the ratio approach?'
+    misconceptions:
+      - id: evaluated-numerator-only
+        description: 'Substituted x = 0 into the numerator and reported that, ignoring the indeterminate form.'
+        wrongAnswer: '0'
+      - id: called-it-undefined
+        description: 'Saw the 0/0 form and concluded the limit does not exist.'
+        wrongAnswer: 'dne'

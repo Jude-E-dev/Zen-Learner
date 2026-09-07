@@ -1,0 +1,78 @@
+import { z } from "zod";
+
+/**
+ * The question bank is the product (design doc constraint #1).
+ *
+ * Every field here is authored by a human and validated at build time. Nothing
+ * in this schema is ever generated at runtime. `pnpm validate:content` fails the
+ * build on any violation, including semantic ones the type system can't see
+ * (an answer key that disagrees with its own worked solution, a "wrong answer"
+ * distractor that is actually correct).
+ */
+
+export const ANSWER_TYPES = ["expression", "antiderivative", "number"] as const;
+export type AnswerType = (typeof ANSWER_TYPES)[number];
+
+/**
+ * One step of the authored worked solution. `result` is the state of the
+ * problem after this step; the LAST step's result must be equivalent to
+ * canonicalAnswer, which is what the validator checks.
+ */
+export const WorkedStepSchema = z.object({
+  step: z.string().min(1, "worked solution step needs prose"),
+  result: z.string().min(1).optional(),
+});
+
+/**
+ * A named misconception and the wrong answer it produces. This is what lets the
+ * tutor say something specific about *this* mistake without reasoning about the
+ * problem itself (constraint #2).
+ */
+export const MisconceptionSchema = z.object({
+  id: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, "misconception id must be kebab-case"),
+  description: z
+    .string()
+    .min(10, "describe the misconception well enough to write a hint against it"),
+  wrongAnswer: z.string().min(1),
+});
+
+export const QuestionSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/, "question id must be kebab-case"),
+  topic: z.literal("calculus"),
+  subtopic: z.string().min(1),
+  /** Difficulty tier 1-5. The selector promotes/demotes within this range. */
+  tier: z.number().int().min(1).max(5),
+  /** LaTeX-capable prompt shown to the learner. */
+  prompt: z.string().min(1),
+  answerType: z.enum(ANSWER_TYPES),
+  /**
+   * Free variables the answer may contain. Sampling generates a value per
+   * variable, so implicit-differentiation answers like -x/y work.
+   */
+  variables: z.array(z.string().min(1)).default(["x"]),
+  canonicalAnswer: z.string().min(1),
+  /**
+   * Escape hatch only. The checker compares by numeric behavior, so this is for
+   * answers that aren't numerically evaluable (e.g. "dne"). Every entry is
+   * validated as genuinely equivalent to canonicalAnswer where it can be.
+   */
+  acceptedForms: z.array(z.string().min(1)).default([]),
+  workedSolution: z
+    .array(WorkedStepSchema)
+    .min(2, "a worked solution needs at least two steps to be worth showing"),
+  /** Exactly three rungs, per the pause protocol in constraint #2. */
+  hints: z
+    .array(z.string().min(1))
+    .length(3, "hint ladder must have exactly 3 rungs"),
+  misconceptions: z.array(MisconceptionSchema).min(2).max(4),
+});
+
+export type Question = z.infer<typeof QuestionSchema>;
+export type Misconception = z.infer<typeof MisconceptionSchema>;
+export type WorkedStep = z.infer<typeof WorkedStepSchema>;
+
+export const QuestionFileSchema = z.object({
+  questions: z.array(QuestionSchema).min(1),
+});

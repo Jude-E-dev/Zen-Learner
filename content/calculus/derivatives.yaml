@@ -1,0 +1,162 @@
+questions:
+  - id: chain-rule-power
+    topic: calculus
+    subtopic: chain rule
+    tier: 1
+    prompt: 'Differentiate: $f(x) = (3x + 1)^5$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '15(3x+1)^4'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The outer function is $u^5$ and the inner function is $u = 3x + 1$.'
+      - step: 'Differentiate the outside, keeping the inside intact: $5(3x+1)^4$.'
+        result: '5(3x+1)^4'
+      - step: 'Multiply by the derivative of the inside, which is $3$.'
+        result: '15(3x+1)^4'
+    hints:
+      - 'This is a function tucked inside another function. What is on the outside, and what is on the inside?'
+      - 'You brought the power down correctly. The chain rule says you are not finished yet, so what does the inside function contribute?'
+      - 'The inside is $3x + 1$. What is its derivative, and where does that factor go?'
+    misconceptions:
+      - id: forgot-inner-derivative
+        description: 'Differentiated the outer power but never multiplied by the derivative of the inner function.'
+        wrongAnswer: '5(3x+1)^4'
+      - id: kept-original-exponent
+        description: 'Multiplied by the inner derivative but never decremented the exponent.'
+        wrongAnswer: '15(3x+1)^5'
+
+  - id: product-rule-x2-sin
+    topic: calculus
+    subtopic: product rule
+    tier: 2
+    prompt: 'Differentiate: $f(x) = x^2 \sin(x)$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '2x*sin(x) + x^2*cos(x)'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Two factors are multiplied, so use the product rule: the derivative of $uv$ is (derivative of $u$) times $v$, plus $u$ times (derivative of $v$), with $u = x^2$ and $v = \sin(x)$.'
+      - step: 'Differentiate each factor: $u$ gives $2x$, and $v$ gives $\cos(x)$.'
+      - step: 'Assemble: $2x\sin(x) + x^2\cos(x)$.'
+        result: '2x*sin(x) + x^2*cos(x)'
+    hints:
+      - 'You have two things multiplied together. Does differentiating a product mean differentiating each piece separately?'
+      - 'The product rule keeps one factor untouched in each term. Which factor stays whole in your first term?'
+      - 'You need two terms added together. What is the second one, where $x^2$ stays put?'
+    misconceptions:
+      - id: product-of-derivatives
+        description: 'Differentiated each factor and multiplied the results, instead of applying the product rule.'
+        wrongAnswer: '2x*cos(x)'
+      - id: dropped-second-term
+        description: 'Applied the product rule but only wrote the first term.'
+        wrongAnswer: '2x*sin(x)'
+
+  - id: quotient-rule-x-over-x2p1
+    topic: calculus
+    subtopic: quotient rule
+    tier: 3
+    prompt: 'Differentiate: $f(x) = \dfrac{x}{x^2 + 1}$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '(1 - x^2)/(x^2 + 1)^2'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Use the quotient rule with $u = x$ and $v = x^2 + 1$, so the derivative of $u$ is $1$ and the derivative of $v$ is $2x$.'
+      - step: 'Form the numerator (derivative of $u$) times $v$, minus $u$ times (derivative of $v$): $(1)(x^2 + 1) - x(2x) = x^2 + 1 - 2x^2$.'
+        result: '1 - x^2'
+      - step: 'Simplify the numerator and square the denominator.'
+        result: '(1 - x^2)/(x^2 + 1)^2'
+    hints:
+      - 'The quotient rule has a specific order in its numerator. Which term comes first, the one with the derivative of the top or of the bottom?'
+      - 'Your numerator looks close. Expand $(1)(x^2+1) - x(2x)$ carefully and see what the $x^2$ terms do.'
+      - 'The denominator is not left alone in the quotient rule. What happens to it?'
+    misconceptions:
+      - id: reversed-numerator
+        description: 'Subtracted in the wrong order, producing the negative of the correct numerator.'
+        wrongAnswer: '(x^2 - 1)/(x^2 + 1)^2'
+      - id: denominator-not-squared
+        description: 'Built the numerator correctly but left the denominator unsquared.'
+        wrongAnswer: '(1 - x^2)/(x^2 + 1)'
+
+  - id: chain-rule-sin-x2
+    topic: calculus
+    subtopic: chain rule
+    tier: 2
+    prompt: 'Differentiate: $f(x) = \sin(x^2)$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '2x*cos(x^2)'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The outer function is $\sin(u)$ with inner function $u = x^2$.'
+      - step: 'Differentiate the outside and keep the inside: $\cos(x^2)$.'
+        result: 'cos(x^2)'
+      - step: 'Multiply by the derivative of the inside, $2x$.'
+        result: '2x*cos(x^2)'
+    hints:
+      - 'The $x^2$ sits inside the sine. Does that inner function affect the derivative?'
+      - 'You have the outer derivative right. What is the derivative of what is inside the brackets?'
+      - 'The inside is $x^2$, whose derivative is $2x$. Where does that factor belong?'
+    misconceptions:
+      - id: forgot-inner-derivative
+        description: 'Differentiated the sine but ignored the inner function entirely.'
+        wrongAnswer: 'cos(x^2)'
+      - id: differentiated-inside-argument
+        description: 'Applied the chain factor but also replaced the inner function in the argument.'
+        wrongAnswer: '2x*cos(x)'
+
+  - id: implicit-diff-circle
+    topic: calculus
+    subtopic: implicit differentiation
+    tier: 3
+    prompt: 'Given $x^2 + y^2 = 25$, find $\dfrac{dy}{dx}$ in terms of $x$ and $y$.'
+    answerType: expression
+    variables: [x, y]
+    canonicalAnswer: '-x/y'
+    acceptedForms: []
+    workedSolution:
+      - step: 'Differentiate both sides with respect to $x$, treating $y$ as a function of $x$.'
+        result: '2x + 2y*(dy/dx)'
+      - step: 'The right-hand side is a constant, so $2x + 2y\frac{dy}{dx} = 0$.'
+      - step: 'Solve for $\frac{dy}{dx}$: divide through by $2y$ and move $x$ across.'
+        result: '-x/y'
+    hints:
+      - 'When you differentiate a term containing $y$, what extra factor does the chain rule force you to write?'
+      - 'You have $2x + 2y\frac{dy}{dx} = 0$. What do you do next to get $\frac{dy}{dx}$ alone?'
+      - 'Dividing $-2x$ by $2y$ leaves a factor of $2$ on both. What cancels?'
+    misconceptions:
+      - id: sign-error
+        description: 'Solved for dy/dx but dropped the negative sign when moving the x term across.'
+        wrongAnswer: 'x/y'
+      - id: incomplete-cancellation
+        description: 'Forgot that the 2 cancels from numerator and denominator.'
+        wrongAnswer: '-x/(2y)'
+
+  - id: chain-log-cos
+    topic: calculus
+    subtopic: chain rule
+    tier: 4
+    prompt: 'Differentiate: $f(x) = \ln(\cos(x))$'
+    answerType: expression
+    variables: [x]
+    canonicalAnswer: '-tan(x)'
+    acceptedForms: []
+    workedSolution:
+      - step: 'The outer function is $\ln(u)$ with $u = \cos(x)$, and $\frac{d}{du}\ln(u) = \frac{1}{u}$.'
+        result: '1/cos(x)'
+      - step: 'Multiply by the inner derivative, $\frac{d}{dx}\cos(x) = -\sin(x)$.'
+        result: '-sin(x)/cos(x)'
+      - step: 'Recognise the quotient as a tangent.'
+        result: '-tan(x)'
+    hints:
+      - 'A logarithm of something contributes one over that something. What is the "something" here?'
+      - 'You have the $\frac{1}{\cos(x)}$ part. What does the chain rule make you multiply by?'
+      - 'The derivative of $\cos(x)$ is $-\sin(x)$. What does $\frac{-\sin(x)}{\cos(x)}$ simplify to?'
+    misconceptions:
+      - id: forgot-inner-derivative
+        description: 'Applied the logarithm rule but never multiplied by the derivative of cosine.'
+        wrongAnswer: '1/cos(x)'
+      - id: sign-error
+        description: 'Simplified to a tangent but lost the minus sign from the derivative of cosine.'
+        wrongAnswer: 'tan(x)'

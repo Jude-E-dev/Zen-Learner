@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/judeelzinga/Desktop/Zen_Learner/.codex/hooks/check-gstack.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}
