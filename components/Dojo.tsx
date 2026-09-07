@@ -135,7 +135,7 @@ export function Dojo({
       data-testid="dojo"
     >
       <svg
-        viewBox="0 0 160 64"
+        viewBox="0 0 192 64"
         preserveAspectRatio="xMidYMax meet"
         shapeRendering="crispEdges"
         className={`h-full w-full transition-opacity duration-300 ${
@@ -144,43 +144,43 @@ export function Dojo({
         aria-hidden
       >
         {/* Back wall and floor. Hard edges only — no gradients. */}
-        <rect x="0" y="0" width="160" height="52" fill="#12141b" />
-        <rect x="0" y="30" width="160" height="1" fill="#191d27" />
-        <rect x="0" y="52" width="160" height="2" fill="#2a2f3d" />
-        <rect x="0" y="54" width="160" height="10" fill="#191c25" />
+        <rect x="0" y="0" width="192" height="52" fill="#12141b" />
+        <rect x="0" y="30" width="192" height="1" fill="#191d27" />
+        <rect x="0" y="52" width="192" height="2" fill="#2a2f3d" />
+        <rect x="0" y="54" width="192" height="10" fill="#191c25" />
         {/* Floor boards, so the ground reads as a surface rather than a band. */}
-        {[10, 44, 78, 112, 146].map((x) => (
+        {[12, 46, 80, 114, 148, 182].map((x) => (
           <rect key={x} x={x} y="54" width="1" height="10" fill="#12141b" />
         ))}
 
         {/* Wall banner, hung from the ceiling. */}
-        <rect x="16" y="0" width="12" height="2" fill="#3b4a6b" />
-        <rect x="17" y="2" width="10" height="30" fill="#1d2230" />
-        <rect x="20" y="7" width="4" height="2" fill="#e5484d" />
-        <rect x="20" y="12" width="4" height="2" fill="#e5484d" />
-        <rect x="20" y="17" width="4" height="5" fill="#e5484d" />
-        <rect x="17" y="32" width="10" height="1" fill="#3b4a6b" />
+        <rect x="20" y="0" width="12" height="2" fill="#3b4a6b" />
+        <rect x="21" y="2" width="10" height="30" fill="#1d2230" />
+        <rect x="24" y="7" width="4" height="2" fill="#e5484d" />
+        <rect x="24" y="12" width="4" height="2" fill="#e5484d" />
+        <rect x="24" y="17" width="4" height="5" fill="#e5484d" />
+        <rect x="21" y="32" width="10" height="1" fill="#3b4a6b" />
 
         {/* Paper lantern on its cord. It warms as the combo builds. */}
-        <rect x="132" y="0" width="1" height="10" fill="#2a2f3d" />
+        <rect x="166" y="0" width="1" height="10" fill="#2a2f3d" />
         <rect
-          x="128"
+          x="162"
           y="10"
           width="9"
           height="11"
           fill={combo >= 3 ? "#f5b544" : "#8a6a2a"}
         />
         <rect
-          x="130"
+          x="164"
           y="13"
           width="5"
           height="6"
           fill={combo >= 3 ? "#ffe9b0" : "#c9a45a"}
         />
-        <rect x="130" y="21" width="5" height="1" fill="#2a2f3d" />
+        <rect x="164" y="21" width="5" height="1" fill="#2a2f3d" />
 
         {/* Feet land on the floor line at y=52. */}
-        <PixelArt map={RONIN} x={38} y={8} />
+        <PixelArt map={RONIN} x={50} y={8} />
 
         {/* The post takes the hit, so it is what recoils. */}
         <g
@@ -188,34 +188,34 @@ export function Dojo({
             mood === "strike" ? "anim-recoil" : mood === "miss" ? "anim-miss" : ""
           }
         >
-          <PixelArt map={POST} x={104} y={18} />
+          <PixelArt map={POST} x={116} y={18} />
         </g>
 
-        {/* The blade, held at the right hand (x=68, y=36) and swinging through
+        {/* The blade, held at the right hand (x=80, y=36) and swinging through
             it on a landed strike. */}
         <g
           className={mood === "strike" ? "anim-slash" : ""}
-          style={{ transformOrigin: "68px 36px" }}
+          style={{ transformOrigin: "80px 36px" }}
         >
-          <rect x="64" y="35" width="6" height="2" fill="#7a5a3a" />
-          <rect x="70" y="35" width="26" height="2" fill="#cfd6e6" />
-          <rect x="70" y="37" width="26" height="1" fill="#8e97ab" />
+          <rect x="76" y="35" width="6" height="2" fill="#7a5a3a" />
+          <rect x="82" y="35" width="26" height="2" fill="#cfd6e6" />
+          <rect x="82" y="37" width="26" height="1" fill="#8e97ab" />
         </g>
 
         {/* The contact arc, drawn only at the moment of the hit. */}
         {mood === "strike" && (
           <g className="anim-arc">
-            <rect x="100" y="20" width="2" height="30" fill="#e8e4d9" />
-            <rect x="97" y="25" width="2" height="20" fill="#4ade80" />
+            <rect x="112" y="20" width="2" height="30" fill="#e8e4d9" />
+            <rect x="109" y="25" width="2" height="20" fill="#4ade80" />
           </g>
         )}
 
         {/* Combo lives inside the scene's own coordinates. Positioned in HTML it
-            drifted away from the art, because the viewBox letterboxes. */}
+            drifted away from the art when the viewBox letterboxed. */}
         {combo >= 3 && !quiet && (
           <g>
             <text
-              x="156"
+              x="188"
               y="48"
               textAnchor="end"
               fill="#f5b544"
@@ -225,7 +225,7 @@ export function Dojo({
               {combo}
             </text>
             <text
-              x="156"
+              x="188"
               y="56"
               textAnchor="end"
               fill="#8a6a2a"
