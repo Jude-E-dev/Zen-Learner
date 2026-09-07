@@ -67,9 +67,34 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* The blade swings through on a landed strike, then settles back. */
+@keyframes slash {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-38deg); }
+  55% { transform: rotate(14deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* The contact arc: bright for a frame or two, then gone. */
+@keyframes arc {
+  0% { opacity: 0; transform: translateX(-6px); }
+  20% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(4px); }
+}
+
+/* The post takes the hit. */
+@keyframes recoil {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+}
+
 .anim-hit { animation: hit-pop 700ms steps(12, end) forwards; }
 .anim-miss { animation: miss-shake 180ms steps(4, end) 1; }
 .anim-quiet { animation: quiet-in 260ms steps(6, end) both; }
+.anim-slash { animation: slash 420ms steps(7, end) 1; }
+.anim-arc { animation: arc 320ms steps(5, end) 1; }
+.anim-recoil { animation: recoil 300ms steps(5, end) 1; }
 
 /*
  * Reduced motion cuts the shake and the drift but never the state change. The
@@ -84,7 +109,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .anim-hit,
   .anim-miss,
-  .anim-quiet {
+  .anim-quiet,
+  .anim-slash,
+  .anim-arc,
+  .anim-recoil {
     animation: none !important;
   }
   .anim-hit {

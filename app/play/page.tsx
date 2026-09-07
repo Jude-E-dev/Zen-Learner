@@ -9,6 +9,8 @@ import { NotationHelp } from "@/components/NotationHelp";
 import { PausePanel } from "@/components/PausePanel";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Banner, type BannerMessage } from "@/components/Banner";
+import { Dojo, type DojoMood } from "@/components/Dojo";
+import { RankBar } from "@/components/RankBar";
 import {
   advanceHint,
   dismissNotationHelp,
@@ -122,6 +124,24 @@ export default function PlayPage() {
     state.selector.atCap,
   ]);
 
+  // The room reacts. A landed strike and a miss are both brief, so they live as
+  // transient moods rather than derived state.
+  const [mood, setMood] = useState<DojoMood>("idle");
+
+  useEffect(() => {
+    if (!state.lastAward) return;
+    setMood("strike");
+    const timer = setTimeout(() => setMood("idle"), 480);
+    return () => clearTimeout(timer);
+  }, [state.lastAward?.seq]);
+
+  useEffect(() => {
+    if (state.lastResult?.verdict !== "incorrect") return;
+    setMood("miss");
+    const timer = setTimeout(() => setMood("idle"), 260);
+    return () => clearTimeout(timer);
+  }, [state.lastResult]);
+
   function grade(from: SessionState, answer: string) {
     const before = from.lastAward?.seq ?? 0;
     const graded = submitAnswer(from, answer, POOL);
@@ -202,12 +222,13 @@ export default function PlayPage() {
 
   return (
     <main
-      className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-5 py-8"
+      className="mx-auto flex h-screen max-w-5xl flex-col gap-4 px-5 py-5"
       onKeyDown={handleKeyDown}
     >
       <Banner message={banner} />
 
       <Hud state={state} rank={rank} />
+      <RankBar rank={rank} />
 
       {!durable && (
         <p className="pixel-frame border-gold/50 bg-ink-soft text-gold px-4 py-2 text-xs">
@@ -217,9 +238,9 @@ export default function PlayPage() {
       )}
 
       <section
-        className={`pixel-frame bg-ink-soft relative p-7 ${showMiss ? "anim-miss" : ""}`}
+        className={`pixel-frame bg-ink-soft relative shrink-0 p-6 ${showMiss ? "anim-miss" : ""}`}
       >
-        <div className="text-paper-dim mb-4 flex items-center gap-3 text-[10px] tracking-widest">
+        <div className="text-paper-dim mb-3 flex items-center gap-3 text-[10px] tracking-widest">
           <span>TIER {q.tier}</span>
           <span className="text-ink-line">|</span>
           <span className="uppercase">{q.subtopic}</span>
@@ -240,13 +261,27 @@ export default function PlayPage() {
         )}
       </section>
 
-      {state.showNotationHelp && (
-        <NotationHelp onDismiss={() => setState(dismissNotationHelp(state))} />
-      )}
+      {/* The room fills whatever is left. When the pause opens it shrinks to a
+          strip and dims, so the world stays present while the ladder gets the
+          space — the grind quieting down, rather than being replaced. */}
+      <div className="flex min-h-0 grow flex-col gap-4">
+        {state.showNotationHelp && (
+          <NotationHelp onDismiss={() => setState(dismissNotationHelp(state))} />
+        )}
 
-      {inPause && <PausePanel state={state} />}
+        {inPause ? (
+          <>
+            <Dojo mood="quiet" combo={0} className="h-16 shrink-0" />
+            <div className="min-h-0 grow overflow-y-auto">
+              <PausePanel state={state} />
+            </div>
+          </>
+        ) : (
+          <Dojo mood={mood} combo={state.streak} />
+        )}
+      </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex shrink-0 flex-col gap-2">
         <label htmlFor="answer" className="sr-only">
           Your answer
         </label>
