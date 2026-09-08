@@ -71,7 +71,7 @@ export default function TopicSelect() {
   };
 
   return (
-    <main className="mx-auto flex h-screen max-w-5xl flex-col gap-4 px-5 py-5">
+    <main className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="text-jade text-4xl tracking-[0.2em]">ZEN MODE</h1>

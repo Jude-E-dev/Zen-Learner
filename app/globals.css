@@ -155,6 +155,28 @@ body {
   40% { transform: translateX(-4px); }
 }
 
+/*
+ * The same punch as hit-pop, in the practice hall's own coordinate system.
+ * CSS lengths inside an SVG are user units, so the HTML version's 26px rise
+ * would be a third of the way up a 64-unit-tall scene.
+ */
+@keyframes hit-pop-scene {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  30% { transform: translateY(-4px) scale(1.15); opacity: 1; }
+  100% { transform: translateY(-10px) scale(1); opacity: 0; }
+}
+
+/*
+ * transform-box matters here. A CSS transform on an SVG element takes its
+ * origin from the SVG's own (0,0) by default, so scaling the damage number
+ * flew it in from the top-left corner of the room instead of punching it in
+ * place over the post. fill-box makes the element's own box the origin.
+ */
+.anim-hit-scene {
+  animation: hit-pop-scene 700ms steps(12, end) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
 .anim-breathe { animation: breathe 2600ms step-end infinite; }
 .anim-lunge { animation: lunge 420ms steps(4, end) 1; }
 .anim-flinch { animation: flinch 180ms steps(3, end) 1; }
@@ -189,10 +211,12 @@ body {
   .anim-recoil,
   .anim-breathe,
   .anim-lunge,
-  .anim-flinch {
+  .anim-flinch,
+  .anim-hit-scene {
     animation: none !important;
   }
-  .anim-hit {
+  .anim-hit,
+  .anim-hit-scene {
     opacity: 1;
     transform: none;
   }

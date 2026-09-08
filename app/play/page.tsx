@@ -187,7 +187,7 @@ export default function PlayPage() {
 
   if (state.phase === "summary") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-6 px-5 py-10">
+      <main className="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center gap-6 px-5 py-10">
         <SummaryCard
           state={state}
           rank={rank}
@@ -222,7 +222,7 @@ export default function PlayPage() {
 
   return (
     <main
-      className="mx-auto flex h-screen max-w-5xl flex-col gap-4 px-5 py-5"
+      className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 px-5 py-5"
       onKeyDown={handleKeyDown}
     >
       <Banner message={banner} />
@@ -238,7 +238,7 @@ export default function PlayPage() {
       )}
 
       <section
-        className={`pixel-frame bg-ink-soft relative shrink-0 p-6 ${showMiss ? "anim-miss" : ""}`}
+        className={`pixel-frame bg-ink-soft shrink-0 p-6 ${showMiss ? "anim-miss" : ""}`}
       >
         <div className="text-paper-dim mb-3 flex items-center gap-3 text-label tracking-widest">
           <span>TIER {q.tier}</span>
@@ -247,18 +247,6 @@ export default function PlayPage() {
         </div>
 
         <MathText text={q.prompt} className="block text-xl leading-relaxed" />
-
-        {/* The hit lands over the transition. Keyed on the award sequence so
-            each correct answer replays it, including a repeat of the same XP. */}
-        {state.lastAward && (
-          <span
-            key={state.lastAward.seq}
-            aria-hidden
-            className="anim-hit text-jade pointer-events-none absolute right-7 top-6 text-3xl font-bold tabular-nums"
-          >
-            +{state.lastAward.xp}
-          </span>
-        )}
       </section>
 
       {/* The room fills whatever is left. When the pause opens it shrinks to a
@@ -272,23 +260,24 @@ export default function PlayPage() {
         {inPause ? (
           <>
             <Dojo
-                mood="quiet"
-                combo={0}
-                avatar={profile.avatar}
-                rankId={rank.current.id}
-                className="h-16 shrink-0"
-              />
+              mood="quiet"
+              combo={0}
+              avatar={profile.avatar}
+              rankId={rank.current.id}
+              className="h-16 shrink-0"
+            />
             <div className="min-h-0 grow overflow-y-auto">
               <PausePanel state={state} />
             </div>
           </>
         ) : (
           <Dojo
-                mood={mood}
-                combo={state.streak}
-                avatar={profile.avatar}
-                rankId={rank.current.id}
-              />
+            mood={mood}
+            combo={state.streak}
+            award={state.lastAward}
+            avatar={profile.avatar}
+            rankId={rank.current.id}
+          />
         )}
       </div>
 

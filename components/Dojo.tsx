@@ -135,12 +135,15 @@ export function PixelArt({
 export function Dojo({
   mood,
   combo,
+  award = null,
   avatar = defaultAvatar(),
   rankId = "kensei",
   className = "grow",
 }: {
   mood: DojoMood;
   combo: number;
+  /** The XP just awarded, drawn at the post. `seq` replays it on a repeat. */
+  award?: { xp: number; seq: number } | null;
   /** How the learner has dressed the ronin. Defaults to the starting kit. */
   avatar?: AvatarChoice;
   /** Which rank the learner holds, so locked options fall back rather than render holes. */
@@ -152,7 +155,11 @@ export function Dojo({
 
   return (
     <div
-      className={`relative w-full overflow-hidden ${className}`}
+      /*
+        The wall colour, not the page's, so the band left over when the room is
+        taller than its 3:1 art reads as ceiling rather than as a seam.
+      */
+      className={`bg-hall-wall relative w-full overflow-hidden ${className}`}
       data-testid="dojo"
     >
       <svg
@@ -243,6 +250,29 @@ export function Dojo({
           <g className="anim-arc">
             <rect x="112" y="20" width="2" height="30" fill="var(--color-paper)" />
             <rect x="109" y="25" width="2" height="20" fill="var(--color-jade)" />
+          </g>
+        )}
+
+        {/*
+          The damage number, at the thing taking the damage.
+
+          It used to sit at the top-right of the question card, roughly 250px
+          from the post it was rewarding a hit on — the reward for a strike,
+          nowhere near the strike. Like the combo below it, it lives in the
+          scene's own coordinates so it cannot drift away from the art.
+        */}
+        {award && !quiet && (
+          <g key={award.seq} className="anim-hit-scene">
+            <text
+              x="126"
+              y="16"
+              textAnchor="middle"
+              fill="var(--color-jade)"
+              fontSize="11"
+              fontFamily="ui-monospace, monospace"
+            >
+              +{award.xp}
+            </text>
           </g>
         )}
 
