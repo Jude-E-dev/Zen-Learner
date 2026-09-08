@@ -141,11 +141,38 @@ export default function PlayPage() {
   // transient moods rather than derived state.
   const [mood, setMood] = useState<DojoMood>("idle");
 
+  /*
+   * The damage number is an event, not a fact about the session.
+   *
+   * It used to read straight off state.lastAward, which holds the last award
+   * *ever made this session* and is never cleared. Any remount then replayed
+   * the punch with a stale number — closing the armoury or stepping out of the
+   * hint ladder both showed a phantom "+30" that added nothing to the total,
+   * because nothing had been awarded. Holding it here, and clearing it when it
+   * is done, means the number exists exactly as long as the event it reports.
+   */
+  const [award, setAward] = useState<SessionState["lastAward"]>(null);
+
   useEffect(() => {
     if (!state.lastAward) return;
     setMood("strike");
-    const timer = setTimeout(() => setMood("idle"), 480);
-    return () => clearTimeout(timer);
+    setAward(state.lastAward);
+
+    /*
+     * Reduced motion gets longer, not shorter. With the flight animation cut
+     * there is no movement to catch the eye, so the number has to hold long
+     * enough to be read from a standing start.
+     */
+    const reduced =
+      typeof matchMedia === "function" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const moodTimer = setTimeout(() => setMood("idle"), 480);
+    const awardTimer = setTimeout(() => setAward(null), reduced ? 1600 : 700);
+    return () => {
+      clearTimeout(moodTimer);
+      clearTimeout(awardTimer);
+    };
   }, [state.lastAward?.seq]);
 
   useEffect(() => {
@@ -290,6 +317,9 @@ export default function PlayPage() {
   const showMiss = result?.verdict === "incorrect";
   const showUnreadable = result?.verdict === "unreadable";
   const inPause = state.phase === "paused" || state.phase === "revealed";
+  // The armoury and the hint ladder both take the room's space and both want
+  // the scene quiet behind them.
+  const panelOpen = armoury || inPause;
 
   return (
     <main
@@ -338,22 +368,28 @@ export default function PlayPage() {
           <NotationHelp onDismiss={() => setState(dismissNotationHelp(state))} />
         )}
 
-        {armoury ? (
-          /*
-            The hall keeps a strip, exactly as it does during a pause. Dressing
-            the ronin with the ronin off-screen would be picking colours blind,
-            and it is the live preview that makes the armoury worth opening
-            here rather than back at the front door.
-          */
-          <>
-            <Dojo
-              mood="idle"
-              combo={0}
-              avatar={profile.avatar}
-              rankId={rank.current.id}
-              className="h-28 shrink-0"
-            />
-            <div className="min-h-0 grow overflow-y-auto">
+        {/*
+          One Dojo, always in the same place, with the panels sliding in beneath
+          it. Three conditional copies meant every panel toggle unmounted the
+          scene and mounted a fresh one, which replayed the damage number and
+          restarted the idle breath from frame zero. The hall keeps a strip
+          while a panel is open: dressing the ronin, or working through a hint,
+          with the ronin off-screen loses the thing being talked about.
+        */}
+        <Dojo
+          mood={armoury ? "idle" : inPause ? "quiet" : mood}
+          combo={panelOpen ? 0 : state.streak}
+          award={panelOpen ? null : award}
+          avatar={profile.avatar}
+          rankId={rank.current.id}
+          className={
+            armoury ? "h-28 shrink-0" : inPause ? "h-20 shrink-0" : "grow"
+          }
+        />
+
+        {panelOpen && (
+          <div className="min-h-0 grow overflow-y-auto">
+            {armoury ? (
               <ArmouryPanel
                 choice={profile.avatar}
                 currentRankId={rank.current.id}
@@ -361,29 +397,10 @@ export default function PlayPage() {
                 onClose={() => setArmoury(false)}
                 note="ESC TO CLOSE · YOUR STREAK IS SAFE"
               />
-            </div>
-          </>
-        ) : inPause ? (
-          <>
-            <Dojo
-              mood="quiet"
-              combo={0}
-              avatar={profile.avatar}
-              rankId={rank.current.id}
-              className="h-20 shrink-0"
-            />
-            <div className="min-h-0 grow overflow-y-auto">
+            ) : (
               <PausePanel state={state} />
-            </div>
-          </>
-        ) : (
-          <Dojo
-            mood={mood}
-            combo={state.streak}
-            award={state.lastAward}
-            avatar={profile.avatar}
-            rankId={rank.current.id}
-          />
+            )}
+          </div>
         )}
       </div>
 
