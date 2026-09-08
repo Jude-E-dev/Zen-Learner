@@ -14,7 +14,7 @@ export function RankBar({ rank }: { rank: RankProgress }) {
   if (!rank.next) {
     return (
       <div className="flex items-center gap-3 px-1">
-        <span className="text-gold text-[10px] tracking-[0.25em]">
+        <span className="text-gold text-label tracking-[0.25em]">
           {rank.current.name.toUpperCase()} — TOP RANK
         </span>
         <div className="bg-gold h-2 grow" />
@@ -29,7 +29,7 @@ export function RankBar({ rank }: { rank: RankProgress }) {
 
   return (
     <div className="flex flex-col gap-1.5 px-1">
-      <div className="flex items-baseline justify-between text-[10px] tracking-[0.25em]">
+      <div className="flex items-baseline justify-between text-label tracking-[0.25em]">
         <span className="text-indigo">{rank.current.name.toUpperCase()}</span>
         <span className="text-paper-dim">
           NEXT: <span className="text-paper">{rank.next.name.toUpperCase()}</span>
@@ -79,7 +79,7 @@ function Track({
           />
         ))}
       </div>
-      <span className="text-paper-dim w-28 shrink-0 text-right text-[10px] tabular-nums">
+      <span className="text-paper-dim w-28 shrink-0 text-right text-label tabular-nums">
         {label}
       </span>
     </div>

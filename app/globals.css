@@ -40,6 +40,15 @@
   --color-timber: #7a5a3a;
 
   --font-pixel: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /*
+   * The label size. Every stat caption, gate label, tier tag and hint line in
+   * the app is this size, and it was written as the arbitrary value text-[10px]
+   * in 21 places across 8 files — the one spot where an otherwise systematic
+   * Tailwind scale reverted to a copy-pasted magic number.
+   */
+  --text-label: 0.625rem;
+  --text-label--line-height: 1.6;
 }
 
 :root {

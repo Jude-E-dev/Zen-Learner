@@ -203,7 +203,7 @@ export default function PlayPage() {
           <button
             type="button"
             onClick={() => void exportEvents().then(downloadJsonl)}
-            className="text-paper-dim mx-auto text-[10px] tracking-widest hover:text-paper"
+            className="text-paper-dim mx-auto text-label tracking-widest hover:text-paper"
           >
             EXPORT EVENTS (.JSONL)
           </button>
@@ -240,7 +240,7 @@ export default function PlayPage() {
       <section
         className={`pixel-frame bg-ink-soft relative shrink-0 p-6 ${showMiss ? "anim-miss" : ""}`}
       >
-        <div className="text-paper-dim mb-3 flex items-center gap-3 text-[10px] tracking-widest">
+        <div className="text-paper-dim mb-3 flex items-center gap-3 text-label tracking-widest">
           <span>TIER {q.tier}</span>
           <span className="text-ink-line">|</span>
           <span className="uppercase">{q.subtopic}</span>
@@ -271,13 +271,24 @@ export default function PlayPage() {
 
         {inPause ? (
           <>
-            <Dojo mood="quiet" combo={0} className="h-16 shrink-0" />
+            <Dojo
+                mood="quiet"
+                combo={0}
+                avatar={profile.avatar}
+                rankId={rank.current.id}
+                className="h-16 shrink-0"
+              />
             <div className="min-h-0 grow overflow-y-auto">
               <PausePanel state={state} />
             </div>
           </>
         ) : (
-          <Dojo mood={mood} combo={state.streak} />
+          <Dojo
+                mood={mood}
+                combo={state.streak}
+                avatar={profile.avatar}
+                rankId={rank.current.id}
+              />
         )}
       </div>
 
@@ -318,7 +329,7 @@ export default function PlayPage() {
           )}
         </div>
 
-        <p className="text-paper-dim border-t-2 border-ink-line pt-3 text-[10px] tracking-widest">
+        <p className="text-paper-dim border-t-2 border-ink-line pt-3 text-label tracking-widest">
           ENTER SUBMIT · SHIFT+ENTER I&apos;M STUCK · ESC END SESSION
         </p>
       </form>

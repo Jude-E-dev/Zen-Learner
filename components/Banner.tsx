@@ -67,7 +67,7 @@ export function Banner({ message }: { message: BannerMessage | null }) {
         <span
           className={`tracking-[0.4em] ${
             visible.kind === "tier-down" ? "text-blood" : "text-jade"
-          } ${big ? "text-sm" : "text-[10px]"}`}
+          } ${big ? "text-sm" : "text-label"}`}
         >
           {labelFor(visible.kind)}
         </span>

@@ -35,20 +35,20 @@ export default function TopicSelect() {
         <div className="mt-5 flex items-center gap-2">
           {tiers.map((count, i) => (
             <div key={i} className="flex flex-col items-center gap-1">
-              <span className="text-paper-dim text-[10px]">T{i + 1}</span>
+              <span className="text-paper-dim text-label">T{i + 1}</span>
               <span
                 className={`h-8 w-6 border-2 border-ink-line ${
                   count > 0 ? "bg-jade-deep" : "bg-ink"
                 }`}
                 style={{ opacity: count > 0 ? 0.35 + Math.min(count, 6) * 0.1 : 1 }}
               />
-              <span className="text-paper-dim text-[10px] tabular-nums">{count}</span>
+              <span className="text-paper-dim text-label tabular-nums">{count}</span>
             </div>
           ))}
         </div>
       </Link>
 
-      <p className="text-paper-dim text-[10px] leading-relaxed tracking-widest">
+      <p className="text-paper-dim text-label leading-relaxed tracking-widest">
         KEYBOARD ONLY · ENTER SUBMITS · SHIFT+ENTER WHEN STUCK · ESC ENDS
       </p>
     </main>

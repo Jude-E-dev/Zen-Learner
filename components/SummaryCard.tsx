@@ -40,19 +40,19 @@ export function SummaryCard({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-jade text-[10px] tracking-[0.3em]">ZEN MODE</p>
-            <p className="text-paper-dim mt-1 text-[10px] tracking-[0.2em]">
+            <p className="text-jade text-label tracking-[0.3em]">ZEN MODE</p>
+            <p className="text-paper-dim mt-1 text-label tracking-[0.2em]">
               CALCULUS · SESSION {sessionNumber}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-paper-dim text-[10px] tracking-[0.2em]">RANK</p>
+            <p className="text-paper-dim text-label tracking-[0.2em]">RANK</p>
             <p className="text-indigo text-lg leading-tight">{rank.current.name}</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-paper-dim text-[10px] tracking-widest">ACCURACY</span>
+          <span className="text-paper-dim text-label tracking-widest">ACCURACY</span>
           <span className="text-gold text-6xl leading-none tabular-nums">
             {accuracy}
             <span className="text-2xl">%</span>
@@ -69,7 +69,7 @@ export function SummaryCard({
         </dl>
 
         {pauses > 0 && (
-          <p className="text-paper-dim text-[10px] leading-relaxed">
+          <p className="text-paper-dim text-label leading-relaxed">
             PAUSED {pauses}× · GOT UNSTUCK {unstuck}×
           </p>
         )}
@@ -99,7 +99,7 @@ function Cell({
   const color = tone === "jade" ? "text-jade" : tone === "gold" ? "text-gold" : "text-paper";
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-paper-dim text-[10px] tracking-widest">{label}</dt>
+      <dt className="text-paper-dim text-label tracking-widest">{label}</dt>
       <dd className={`${color} text-xl leading-none tabular-nums`}>{value}</dd>
     </div>
   );

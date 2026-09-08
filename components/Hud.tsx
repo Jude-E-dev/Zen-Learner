@@ -32,7 +32,7 @@ export function Hud({
         <span className="text-gold text-lg">{selector.tier}</span>
         <span className="text-paper-dim">/{MAX_TIER}</span>
         {selector.atCap && (
-          <span className="text-jade ml-2 text-[10px] tracking-widest">AT CAP</span>
+          <span className="text-jade ml-2 text-label tracking-widest">AT CAP</span>
         )}
       </Stat>
 
@@ -46,7 +46,7 @@ export function Hud({
 
       <Stat label="ACCURACY">
         <span className="tabular-nums">{accuracy === null ? "—" : `${accuracy}%`}</span>
-        <span className="text-paper-dim ml-1 text-[10px]">({answered})</span>
+        <span className="text-paper-dim ml-1 text-label">({answered})</span>
       </Stat>
 
       {/* What the next rank actually costs, in the terms it is measured in. */}
@@ -96,7 +96,7 @@ export function Hud({
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-paper-dim text-[10px] tracking-widest">{label}</span>
+      <span className="text-paper-dim text-label tracking-widest">{label}</span>
       <span className="leading-none">{children}</span>
     </div>
   );
@@ -119,7 +119,7 @@ function Gate({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-paper-dim text-[10px] tracking-widest">
+      <span className="text-paper-dim text-label tracking-widest">
         {disabled ? `${label} (—)` : label}
       </span>
       <div className="flex gap-1">

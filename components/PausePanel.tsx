@@ -25,7 +25,7 @@ export function PausePanel({ state }: { state: SessionState }) {
           {revealed ? "THE WHOLE PATH" : "PAUSED"}
         </h2>
         {!revealed && (
-          <span className="text-paper-dim text-[10px] tracking-widest">
+          <span className="text-paper-dim text-label tracking-widest">
             RUNG {state.hintRung} / {MAX_HINT_RUNG}
           </span>
         )}
