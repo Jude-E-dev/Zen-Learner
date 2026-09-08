@@ -2,19 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import questionData from "@/lib/content/generated.json";
-import type { Question } from "@/lib/content/schema";
+import { DRILLS, type Drill } from "@/lib/content/drills";
 import { Dojo } from "@/components/Dojo";
 import { ArmouryPanel } from "@/components/ArmouryPanel";
 import { useProfile } from "@/lib/persistence/useProfile";
 import { rankFor } from "@/lib/game/ranks";
 import type { AvatarChoice } from "@/lib/game/avatar";
 
-const POOL = questionData as unknown as Question[];
-
-const SUBTOPICS = [...new Set(POOL.map((q) => q.subtopic))].sort();
-const TIERS = [1, 2, 3, 4, 5].map((t) => POOL.filter((q) => q.tier === t).length);
-const MAX_TIER_COUNT = Math.max(...TIERS);
 
 /**
  * The front door.
@@ -37,9 +31,14 @@ export default function TopicSelect() {
   const rank = rankFor(profile.mastery);
   const returning = profile.sessions > 0;
 
-  const begin = useCallback(() => {
-    router.push("/play");
-  }, [router]);
+  const [chosen, setChosen] = useState<Drill>(DRILLS[0]);
+
+  const begin = useCallback(
+    (drill: Drill = chosen) => {
+      router.push(`/play?drill=${drill.id}`);
+    },
+    [router, chosen],
+  );
 
   /*
    * Enter starts a session, matching the play screen where Enter submits. The
@@ -76,7 +75,7 @@ export default function TopicSelect() {
         <div>
           <h1 className="font-bitmap text-jade text-4xl tracking-[0.2em]">ZEN MODE</h1>
           <p className="text-paper-dim mt-2 text-sm">
-            Calculus, one question at a time, for as long as you want.
+            Two drills. Take the calculus slowly, or take the arithmetic fast.
           </p>
         </div>
 
@@ -108,66 +107,92 @@ export default function TopicSelect() {
         />
       ) : (
         <section className="pixel-frame bg-ink-soft shrink-0 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-            <div className="min-w-0">
-              <div className="flex items-baseline gap-3">
-                <h2 className="font-bitmap text-gold text-2xl tracking-widest">CALCULUS</h2>
-                <span className="text-paper-dim text-label tracking-widest">
-                  {POOL.length} QUESTIONS
-                </span>
-              </div>
-              <p className="text-paper-dim mt-2 text-sm">{SUBTOPICS.join(" · ")}</p>
-            </div>
+          {/*
+            One row per drill. They are different in kind, not just in subject:
+            the calculus bank is thirty authored questions with no clock, and
+            mental math is generated and timed. The card says which is which
+            rather than making them look interchangeable.
+          */}
+          <div className="flex flex-col gap-3">
+            {DRILLS.map((drill) => {
+              const active = drill.id === chosen.id;
+              return (
+                <div
+                  key={drill.id}
+                  className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-2 p-4 transition-colors ${
+                    active ? "border-jade-deep bg-ink" : "border-ink-line"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-3">
+                      <h2 className="font-bitmap text-gold text-xl tracking-widest">
+                        {drill.name}
+                      </h2>
+                      <span className="text-paper-dim text-label tracking-widest">
+                        {drill.size === null ? "ENDLESS" : `${drill.size} QUESTIONS`}
+                      </span>
+                      {drill.timed && (
+                        <span className="text-jade text-label tracking-widest">TIMED</span>
+                      )}
+                    </div>
+                    <p className="text-paper-dim mt-1 text-sm">{drill.blurb}</p>
+                    <p className="text-paper-dim/70 mt-1 text-label tracking-wide">
+                      {drill.subtopics.join(" · ")}
+                    </p>
+                  </div>
 
-            {/* The primary action, as an actual button with a verb on it. The
-                whole card used to be one unlabelled link and nothing on the
-                page said how to start. */}
-            <div className="flex shrink-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setArmoury(true)}
-                className="focus-ring pixel-frame text-paper-dim bg-ink px-4 py-3 text-xs tracking-widest hover:border-gold hover:text-paper"
-              >
-                ARMOURY
-              </button>
-              <button
-                type="button"
-                onClick={begin}
-                autoFocus
-                className="focus-ring pixel-frame-hot text-jade bg-ink px-6 py-3 text-base tracking-[0.2em] hover:bg-ink-soft"
-              >
-                {returning ? "CONTINUE ▸" : "BEGIN ▸"}
-              </button>
-            </div>
+                  <div className="flex shrink-0 items-center gap-4">
+                    {drill.tierCounts && <TierBars counts={drill.tierCounts} />}
+                    <button
+                      type="button"
+                      onClick={() => begin(drill)}
+                      onFocus={() => setChosen(drill)}
+                      onMouseEnter={() => setChosen(drill)}
+                      autoFocus={active}
+                      className="focus-ring pixel-frame-hot text-jade bg-ink px-6 py-3 text-base tracking-[0.2em] hover:bg-ink-soft"
+                    >
+                      {returning ? "CONTINUE ▸" : "BEGIN ▸"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="border-ink-line mt-5 flex items-end gap-2 border-t pt-4">
-            {TIERS.map((count, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <span className="text-paper-dim text-label tabular-nums">{count}</span>
-                {/*
-                  Height carries the count. These were five identical squares
-                  separated only by opacity between 0.65 and 0.95, which on a
-                  dark ground is no difference at all — a bar chart that did
-                  not vary with its data.
-                */}
-                <span
-                  className="bg-jade-deep w-6"
-                  style={{ height: `${8 + (count / MAX_TIER_COUNT) * 28}px` }}
-                />
-                <span className="text-paper-dim text-label tracking-widest">
-                  T{i + 1}
-                </span>
-              </div>
-            ))}
-
-            <p className="text-paper-dim text-label ml-auto self-center tracking-widest">
-              ENTER BEGINS · ENTER SUBMITS · SHIFT+ENTER WHEN STUCK · ESC ENDS
+          <div className="border-ink-line mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setArmoury(true)}
+              className="focus-ring pixel-frame text-paper-dim bg-ink px-4 py-2 text-xs tracking-widest hover:border-gold hover:text-paper"
+            >
+              ARMOURY
+            </button>
+            <p className="text-paper-dim text-label tracking-widest">
+              ENTER STARTS THE HIGHLIGHTED DRILL · SHIFT+ENTER WHEN STUCK · ESC ENDS
             </p>
           </div>
         </section>
       )}
     </main>
+  );
+}
+
+/** The authored bank has a real shape per tier. Height carries the count. */
+function TierBars({ counts }: { counts: number[] }) {
+  const max = Math.max(...counts, 1);
+  return (
+    <div className="hidden items-end gap-1.5 sm:flex">
+      {counts.map((count, i) => (
+        <div key={i} className="flex flex-col items-center gap-1">
+          <span className="text-paper-dim text-label tabular-nums">{count}</span>
+          <span
+            className="bg-jade-deep w-5"
+            style={{ height: `${8 + (count / max) * 24}px` }}
+          />
+          <span className="text-paper-dim text-label tracking-widest">T{i + 1}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 

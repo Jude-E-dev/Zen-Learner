@@ -24,6 +24,8 @@ const sample: Summary = {
   pauses: 2,
   unstuck: 2,
   avatar: { hat: "lacquer", robe: "moss", obi: "jade", hakama: "rust" },
+  topic: "calculus",
+  times: null,
 };
 
 describe("permalink round trip", () => {
@@ -44,6 +46,30 @@ describe("permalink round trip", () => {
     expect(summaryUrl(sample, "https://zen.example.com/")).toBe(
       `https://zen.example.com/summary?s=${encodeSummary(sample)}`,
     );
+  });
+
+  it("round-trips a timed drill, times and all", () => {
+    const timed = {
+      ...sample,
+      topic: "mental-math" as const,
+      times: { median: 4200, fastest: 1800 },
+    };
+    expect(decodeSummary(encodeSummary(timed))).toEqual(timed);
+  });
+
+  /*
+   * Links written before mental math existed carry no drill and no times.
+   * They were all calculus, and they have to keep opening.
+   */
+  it("still reads a link from before the drill field existed", () => {
+    const legacy = b64url({
+      v: 1, n: 3, a: 8, c: 6, x: 120, s: 4, t: 2, r: "bushi", p: 1, u: 1,
+      av: ["straw", "indigo", "blood", "olive"],
+    });
+    const decoded = decodeSummary(legacy);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.topic).toBe("calculus");
+    expect(decoded?.times).toBeNull();
   });
 
   it("round-trips a real finished session", () => {

@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { SessionState } from "../game/session";
 import { AVATAR_SLOTS, normalizeAvatar, type AvatarChoice } from "../game/avatar";
 import { RANKS } from "../game/ranks";
+import { TOPICS, type Topic } from "../content/schema";
 
 /**
  * What a finished session is, once it stops being a running session.
@@ -37,6 +38,13 @@ export const summarySchema = z.object({
    * fills whatever is missing with that slot's default.
    */
   av: z.array(z.string().max(32)).min(1).max(8),
+  /**
+   * Which drill this was. Optional, because links written before mental math
+   * existed are still good links — they were all calculus.
+   */
+  d: z.enum(TOPICS).optional(),
+  /** Median and fastest answer, in ms. Only meaningful for a timed drill. */
+  ms: z.tuple([z.number().int().min(0), z.number().int().min(0)]).optional(),
 });
 
 export type SummaryBlob = z.infer<typeof summarySchema>;
@@ -54,6 +62,9 @@ export interface Summary {
   pauses: number;
   unstuck: number;
   avatar: AvatarChoice;
+  topic: Topic;
+  /** Median and fastest answer in ms, or null when the drill was not timed. */
+  times: { median: number; fastest: number } | null;
 }
 
 function rankNameFor(id: string): string {
@@ -84,6 +95,8 @@ export function summaryFromBlob(blob: SummaryBlob): Summary {
     avatar: normalizeAvatar(
       Object.fromEntries(AVATAR_SLOTS.map((slot, i) => [slot, blob.av[i]])),
     ),
+    topic: blob.d ?? "calculus",
+    times: blob.ms ? { median: blob.ms[0], fastest: blob.ms[1] } : null,
   };
 }
 
@@ -100,15 +113,29 @@ export function blobFromSummary(summary: Summary): SummaryBlob {
     p: summary.pauses,
     u: summary.unstuck,
     av: AVATAR_SLOTS.map((slot) => summary.avatar[slot]),
+    d: summary.topic,
+    ...(summary.times
+      ? { ms: [summary.times.median, summary.times.fastest] as [number, number] }
+      : {}),
   };
 }
 
 /** Build the summary for a session that has just ended. */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+    : sorted[mid];
+}
+
 export function summaryFromSession(
   state: SessionState,
   rankId: string,
   sessionNumber: number,
   avatar: AvatarChoice,
+  topic: Topic = "calculus",
+  timed = false,
 ): Summary {
   const { answered, correct, xp, bestStreak, selector, events } = state;
 
@@ -117,6 +144,16 @@ export function summaryFromSession(
   const unstuck = events.filter(
     (e) => e.type === "answer_submitted" && e.verdict === "correct" && e.afterPause,
   ).length;
+
+  /*
+   * Only correct answers count toward a time. A wrong answer you abandoned
+   * after two seconds is not a fast answer, and letting it in would make the
+   * fastest column reward giving up.
+   */
+  const solved = state.events
+    .filter((e) => e.type === "answer_submitted" && e.verdict === "correct")
+    .map((e) => (e as { latencyMs: number }).latencyMs)
+    .filter((ms) => Number.isFinite(ms) && ms >= 0);
 
   return {
     sessionNumber,
@@ -131,5 +168,10 @@ export function summaryFromSession(
     pauses,
     unstuck,
     avatar,
+    topic,
+    times:
+      timed && solved.length > 0
+        ? { median: median(solved), fastest: Math.min(...solved) }
+        : null,
   };
 }

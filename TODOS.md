@@ -4,6 +4,39 @@ Deferred work with enough context to pick up cold. Added by `/plan-eng-review` o
 
 ---
 
+## Mental math drill — shipped 2026-09-08
+
+A second drill: fast mental arithmetic (54 − 17, 21 × 11), timed. Reached from the home
+page, or directly at `/play?drill=mental-math`.
+
+**How it fits:** the questions are generated (`lib/content/mental.ts`) rather than
+authored, because the point is a stream that never repeats. Everything downstream —
+tier selection, ranks, mastery, the dojo, the permalink — consumes `Question[]` and did
+not need to change; `lib/content/drills.ts` is the only place that knows the two drills
+differ.
+
+**Speed is deliberately not worth XP.** Ranks are gated on demonstrated accuracy at a
+tier and never on volume (design doc constraint #5). Paying XP for speed would hand back
+exactly the grind that gate exists to prevent: rush the easy tier, bank the bonus. Speed
+gets its own feedback instead — a clock while you answer, and fastest/typical times on
+the summary card.
+
+**The safety net:** generated content never touches `pnpm validate:content`, so
+`lib/content/mental.test.ts` stands in for it — 28 tests over a wide sample checking that
+every answer is the arithmetic it claims, every distractor is genuinely wrong, every tier
+is reachable, and no hint is degenerate. That last group exists because the first version
+shipped hints like "you are 0 above it. Add 0 then 0." — arithmetically true, useless,
+and invisible to every correctness test. Do not delete that block.
+
+**Still open:**
+- The home page tagline and the calculus card both used to promise "no clock running".
+  The promise now lives on the calculus card only, where it is still true. Worth a second
+  look if a third drill lands.
+- No per-question time target, so "fast" is measured only against your own previous
+  times. A target-time band per tier would make the clock mean something on question one.
+- Tier 5 tops out around `41 × 25`. If that stops being a stretch, the ceiling needs
+  raising rather than the range widening.
+
 ## Cap or rotate the analytics event store
 
 **What:** Add a size cap or rotation policy to the IndexedDB analytics event store.

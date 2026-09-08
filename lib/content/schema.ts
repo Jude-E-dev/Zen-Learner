@@ -14,6 +14,15 @@ export const ANSWER_TYPES = ["expression", "antiderivative", "number"] as const;
 export type AnswerType = (typeof ANSWER_TYPES)[number];
 
 /**
+ * The drills. Calculus is the authored bank this schema was written for;
+ * mental-math is generated at runtime (lib/content/mental.ts) and validated by
+ * property tests rather than by `pnpm validate:content`, which only ever sees
+ * files on disk.
+ */
+export const TOPICS = ["calculus", "mental-math"] as const;
+export type Topic = (typeof TOPICS)[number];
+
+/**
  * One step of the authored worked solution. `result` is the state of the
  * problem after this step; the LAST step's result must be equivalent to
  * canonicalAnswer, which is what the validator checks.
@@ -40,7 +49,7 @@ export const MisconceptionSchema = z.object({
 
 export const QuestionSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/, "question id must be kebab-case"),
-  topic: z.literal("calculus"),
+  topic: z.enum(TOPICS),
   subtopic: z.string().min(1),
   /** Difficulty tier 1-5. The selector promotes/demotes within this range. */
   tier: z.number().int().min(1).max(5),
@@ -73,6 +82,13 @@ export type Question = z.infer<typeof QuestionSchema>;
 export type Misconception = z.infer<typeof MisconceptionSchema>;
 export type WorkedStep = z.infer<typeof WorkedStepSchema>;
 
+/**
+ * What may appear in `content/`. Authored files are calculus only — a
+ * generated topic has no business being committed as YAML, and this is what
+ * stops one drifting in.
+ */
 export const QuestionFileSchema = z.object({
-  questions: z.array(QuestionSchema).min(1),
+  questions: z
+    .array(QuestionSchema.extend({ topic: z.literal("calculus") }))
+    .min(1),
 });

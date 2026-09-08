@@ -30,8 +30,11 @@ export function SummaryCard({
 }) {
   const {
     sessionNumber, answered, correct, accuracy, xp,
-    bestStreak, tier, rankId, rankName, pauses, unstuck, avatar,
+    bestStreak, tier, rankId, rankName, pauses, unstuck, avatar, topic, times,
   } = summary;
+
+  const drillName = topic === "mental-math" ? "MENTAL MATH" : "CALCULUS";
+  const secs = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
@@ -43,7 +46,7 @@ export function SummaryCard({
           <div>
             <p className="font-bitmap text-jade text-label tracking-[0.3em]">ZEN MODE</p>
             <p className="text-paper-dim mt-1 text-label tracking-[0.2em]">
-              CALCULUS · SESSION {sessionNumber}
+              {drillName} · SESSION {sessionNumber}
             </p>
           </div>
           <div className="text-right">
@@ -74,12 +77,25 @@ export function SummaryCard({
             </span>
           </div>
 
-          {pauses > 0 && (
+          {/*
+            On a timed drill the times are the headline beside accuracy —
+            being right is the floor, being quick is the point. Pauses only
+            get the corner when there is no clock to report.
+          */}
+          {times ? (
             <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-widest">
-              PAUSED {pauses}×
+              FASTEST <span className="text-jade">{secs(times.fastest)}</span>
               <br />
-              GOT UNSTUCK {unstuck}×
+              TYPICAL <span className="text-paper">{secs(times.median)}</span>
             </p>
+          ) : (
+            pauses > 0 && (
+              <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-widest">
+                PAUSED {pauses}×
+                <br />
+                GOT UNSTUCK {unstuck}×
+              </p>
+            )
           )}
         </div>
 

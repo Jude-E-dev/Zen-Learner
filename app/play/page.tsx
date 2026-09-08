@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import questionData from "@/lib/content/generated.json";
-import type { Question } from "@/lib/content/schema";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { drillFor, type Drill } from "@/lib/content/drills";
 import { Hud } from "@/components/Hud";
 import { MathText } from "@/components/MathText";
 import { NotationHelp } from "@/components/NotationHelp";
@@ -28,9 +27,8 @@ import { ArmouryPanel } from "@/components/ArmouryPanel";
 import { summaryFromSession } from "@/lib/summary/summary";
 import { summaryUrl } from "@/lib/summary/permalink";
 import type { AvatarChoice } from "@/lib/game/avatar";
+import type { Question } from "@/lib/content/schema";
 import { masteryWithSession, downloadJsonl } from "@/lib/persistence/profile";
-
-const POOL = questionData as unknown as Question[];
 
 /**
  * Keyboard-first by construction. A learner should get through thirty questions
@@ -44,7 +42,22 @@ const POOL = questionData as unknown as Question[];
  * and pressing Enter leaves the pause and grades it.
  */
 export default function PlayPage() {
-  const [state, setState] = useState<SessionState>(() => startSession(POOL));
+  return (
+    <Suspense fallback={null}>
+      <Play />
+    </Suspense>
+  );
+}
+
+function Play() {
+  const drill = drillFor(useSearchParams().get("drill"));
+  /*
+   * The pool is built once per mount and kept. Mental math generates its bank
+   * from a seed, so rebuilding it on every render would reshuffle the drill
+   * underneath the learner mid-session.
+   */
+  const [pool] = useState<Question[]>(() => drill.pool());
+  const [state, setState] = useState<SessionState>(() => startSession(pool));
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { profile, durable, commitSession, saveAvatar, exportEvents } = useProfile();
@@ -153,6 +166,23 @@ export default function PlayPage() {
    */
   const [award, setAward] = useState<SessionState["lastAward"]>(null);
 
+  /*
+   * The clock, for drills that are about speed.
+   *
+   * Ticking display state only — the authoritative latency is measured in
+   * session.ts from attemptStartedAt, so a dropped frame or a backgrounded tab
+   * cannot inflate what gets scored or logged.
+   */
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!drill.timed || state.phase !== "grinding") return;
+    setElapsed(Date.now() - state.attemptStartedAt);
+    const tick = setInterval(() => {
+      setElapsed(Date.now() - state.attemptStartedAt);
+    }, 100);
+    return () => clearInterval(tick);
+  }, [drill.timed, state.phase, state.attemptStartedAt]);
+
   useEffect(() => {
     if (!state.lastAward) return;
     setMood("strike");
@@ -184,7 +214,7 @@ export default function PlayPage() {
 
   function grade(from: SessionState, answer: string) {
     const before = from.lastAward?.seq ?? 0;
-    const graded = submitAnswer(from, answer, POOL);
+    const graded = submitAnswer(from, answer, pool);
     setState(graded);
     // A correct answer has already advanced the stream; clear the box for the
     // question that is now on screen. A wrong one keeps the text so it can be
@@ -245,6 +275,8 @@ export default function PlayPage() {
       // clamp rather than offset: 0 before, the real count after.
       Math.max(1, profile.sessions),
       profile.avatar,
+      drill.id,
+      drill.timed,
     );
 
     async function share() {
@@ -270,7 +302,7 @@ export default function PlayPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setState(startSession(POOL));
+                  setState(startSession(pool));
                   setInput("");
                 }}
                 autoFocus
@@ -333,7 +365,8 @@ export default function PlayPage() {
         anyone who can see it and a second title would be chrome.
       */}
       <h1 className="sr-only">
-        Zen Mode practice hall — tier {q.tier}, rank {rank.current.name}
+        Zen Mode {drill.name.toLowerCase()} — tier {q.tier}, rank{" "}
+        {rank.current.name}
       </h1>
 
       <Banner message={banner} />
@@ -357,7 +390,38 @@ export default function PlayPage() {
           <span className="uppercase">{q.subtopic}</span>
         </div>
 
-        <MathText text={q.prompt} className="block text-xl leading-relaxed" />
+        <div className="flex items-end justify-between gap-4">
+          {/*
+            Bigger on a timed drill, but never in the display face. Silkscreen
+            is for headings; a drill whose whole point is reading a number
+            correctly under pressure needs the clearest glyphs available, and
+            mistaking a 9 for an 8 because the type is decorative is a real
+            failure rather than a cosmetic one. Tabular figures so the prompt
+            does not reflow as digits change.
+          */}
+          <MathText
+            text={q.prompt}
+            className={`block leading-relaxed ${
+              drill.timed ? "text-4xl tabular-nums" : "text-xl"
+            }`}
+          />
+
+          {/*
+            The clock is the whole point of a speed drill, so it is on the
+            question rather than tucked into the HUD. Tabular figures so the
+            digits do not jitter as they climb.
+          */}
+          {drill.timed && (
+            <span
+              aria-hidden
+              className={`shrink-0 tabular-nums text-2xl leading-none ${
+                elapsed < 5000 ? "text-jade" : elapsed < 12000 ? "text-gold" : "text-paper-dim"
+              }`}
+            >
+              {(elapsed / 1000).toFixed(1)}s
+            </span>
+          )}
+        </div>
       </section>
 
       {/* The room fills whatever is left. When the pause opens it shrinks to a
