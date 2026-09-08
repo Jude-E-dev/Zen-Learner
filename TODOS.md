@@ -98,13 +98,18 @@ Two of the four are done. Full report in
 - ~~**No pixel typeface.**~~ Done 2026-09-08. Silkscreen (OFL, self-hosted via
   `next/font`) on the display layer only; body copy, the answer input and
   anything KaTeX touches stay monospace.
+- ~~**The ronin was a hand-drawn 20x22 grid.**~~ Done 2026-09-08. Redrawn from
+  `Sprites/` at 16 colours on a single 288x96 pixel grid, with a fourth avatar
+  slot (hakama) the new sprite made possible.
 - **The hall grows a tall ceiling on narrow viewports.** The scene is 3:1 and
-  anchors to the bottom of its container, so on mobile the room gets a large
-  empty upper half. It paints the wall colour so it reads as a high ceiling
-  rather than a seam, but the ronin ends up small and low.
-  `preserveAspectRatio="slice"` would fill it and is a no-op at desktop's exact
-  3:1, but starts cropping the training post below roughly a 1.75:1 container —
-  too fragile to take without art made for it.
+  anchors to the bottom of its container, so on a phone (roughly 1.4:1) more
+  than half the room is empty wall above the action. It paints the wall colour,
+  so it reads as a high ceiling rather than a seam, and the ronin is
+  width-constrained at that size regardless — about 70px tall on a 375px
+  screen. `preserveAspectRatio="slice"` would fill it and is a no-op at
+  desktop's exact 3:1, but starts cropping the post below roughly 1.75:1. The
+  real fix is a second, narrower composition for phones rather than a different
+  fit rule on the same one.
 - **Reduced motion is verified by source, not by observation.** All ten
   animation classes are in the `prefers-reduced-motion` block in
   `app/globals.css`, but the headless browser used for the review could not
