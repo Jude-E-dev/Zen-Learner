@@ -10,7 +10,7 @@ import {
   resolvePalette,
 } from "./avatar";
 import { RANKS } from "./ranks";
-import { RONIN_LOWER, RONIN_UPPER } from "@/components/Dojo";
+import { FIXED, RONIN_ATTACK, RONIN_LOWER, RONIN_UPPER } from "@/components/Dojo";
 
 /**
  * The load-bearing property here is that the sprite never renders with holes.
@@ -92,13 +92,39 @@ describe("isUnlocked", () => {
 });
 
 describe("resolvePalette", () => {
-  it("colours every character the ronin sprite uses", () => {
-    const used = charactersUsedBy([RONIN_UPPER, RONIN_LOWER]);
-    const palette = resolvePalette(defaultAvatar(), "ashigaru");
-    // The outline is the Dojo's, not the avatar's — it never recolours.
+  /*
+   * Both poses, against the palette the Dojo actually renders with: the fixed
+   * colours it owns (outline, steel, the post) merged with whatever the
+   * avatar resolves to. A character missing from that union does not throw —
+   * the renderer just drops the pixel — so this is the test standing between a
+   * palette edit and a ronin with holes in it.
+   */
+  it.each([
+    ["idle", [RONIN_UPPER, RONIN_LOWER]],
+    ["attack", [RONIN_ATTACK]],
+  ])("colours every character the %s pose uses", (_pose, maps) => {
+    const used = charactersUsedBy(maps as string[][]);
+    const palette = { ...FIXED, ...resolvePalette(defaultAvatar(), "ashigaru") };
     for (const char of used) {
-      if (char === "X") continue;
       expect(palette[char], `no colour for sprite character "${char}"`).toBeDefined();
+    }
+  });
+
+  it("colours every character at every rank and every option", () => {
+    const used = charactersUsedBy([RONIN_UPPER, RONIN_LOWER, RONIN_ATTACK]);
+    for (const rank of RANKS) {
+      for (const slot of AVATAR_SLOTS) {
+        for (const option of AVATAR_OPTIONS[slot]) {
+          const choice = { ...defaultAvatar(), [slot]: option.id };
+          const palette = { ...FIXED, ...resolvePalette(choice, rank.id) };
+          for (const char of used) {
+            expect(
+              palette[char],
+              `${rank.id}/${slot}=${option.id} drops "${char}"`,
+            ).toBeDefined();
+          }
+        }
+      }
     }
   });
 

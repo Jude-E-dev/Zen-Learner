@@ -35,8 +35,6 @@
   --color-hall-lamp-dim: #c9a45a;
   --color-hall-lamp-case-lit: #f5b544;
   --color-hall-lamp-case-dim: #8a6a2a;
-  --color-steel: #cfd6e6;
-  --color-steel-shadow: #8e97ab;
   --color-timber: #7a5a3a;
 
   --font-pixel: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
@@ -117,14 +115,6 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* The blade swings through on a landed strike, then settles back. */
-@keyframes slash {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-38deg); }
-  55% { transform: rotate(14deg); }
-  100% { transform: rotate(0deg); }
-}
-
 /* The contact arc: bright for a frame or two, then gone. */
 @keyframes arc {
   0% { opacity: 0; transform: translateX(-6px); }
@@ -191,7 +181,6 @@ body {
 .anim-hit { animation: hit-pop 700ms steps(12, end) forwards; }
 .anim-miss { animation: miss-shake 180ms steps(4, end) 1; }
 .anim-quiet { animation: quiet-in 260ms steps(6, end) both; }
-.anim-slash { animation: slash 420ms steps(7, end) 1; }
 .anim-arc { animation: arc 320ms steps(5, end) 1; }
 .anim-recoil { animation: recoil 300ms steps(5, end) 1; }
 
@@ -214,7 +203,6 @@ body {
   .anim-hit,
   .anim-miss,
   .anim-quiet,
-  .anim-slash,
   .anim-arc,
   .anim-recoil,
   .anim-breathe,

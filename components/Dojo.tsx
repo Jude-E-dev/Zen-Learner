@@ -36,8 +36,10 @@ export type DojoMood = "idle" | "strike" | "miss" | "quiet";
  * that hold the kit together, and the room itself. Everything they can change
  * arrives through the resolved palette in lib/game/avatar.ts.
  */
-const FIXED: Record<string, string> = {
+export const FIXED: Record<string, string> = {
   X: "#0a0b10", // the silhouette
+  M: "#cfd6e6", // the blade
+  m: "#8e97ab", // the blade, shaded
   T: "#7a5a3a", // post timber
   t: "#52341f", // post timber, shaded
   R: "#cbb27a", // straw binding
@@ -52,70 +54,136 @@ const FIXED: Record<string, string> = {
  * so the lifted frame shows hakama rather than a slit of back wall.
  */
 export const RONIN_UPPER = [
-  "............XXXXXXX..........",
-  "...........XjkkkkkkX.........",
-  "..........XjjkkKKKkjX........",
-  "..........XjjkkKKKkjX........",
-  ".......XXXgjjkkKKKkjjXXXX....",
-  "....XXXjjjgjjjkkKKkhhjjjjXX..",
-  "...XjjjjjjjhhhhHHHHhhjjkkkjX.",
-  "...XjjjkkjjkkhhHHHHhkkKKkkkX.",
-  "....XXkkkkkkkKkkKKKkkkKKkkX..",
-  "......XjjKkkKKkkKKKKkkkKKX...",
-  ".....XggggKjjKjkkkkkKkXXXX...",
-  "....XXXXgggjjjjjkjjjXX.......",
-  "........XXggggSSSSSX.........",
-  ".......XX.XgggSffffX.........",
-  "......XgX.XhgggfSSssX........",
-  "......XggXhhhggfefshhXXX.....",
-  ".....XgggshghgsefefhhgHX.....",
-  "....XhhHhshghHSSSsshhhHX.....",
-  "....XggHhhhhhHHSSSshHhHHX....",
-  "....XhhHhfhhhHHhfffeHhHHX....",
-  "....XhhhHhhhHhHHfffeHhHHX....",
-  "....XehhhgHHHhHHeffeHhHhX....",
-  "...XhhhhhgHHHHHHHhseHhHhX....",
-  "...XhhhHHhghHHHHHhSghhHgHX...",
-  "...XhhHHHhghhHHHhHHgHhhgHhX..",
-  "..XhhhhhhhghgHHHhhhhHhghHhX..",
-  "..XghhhhHgghghHHhhhhHhghhheX.",
-  ".XhghhhhHghhhhhhhhgHggghhsfeX",
-  ".XhhhhhhhghhhhhhhghhhhgggssXX",
-  ".XHHhhhhhgghhogghhhhhhggssX..",
-  ".XHHggPPPgooooghhhgggoofsHX..",
-  "XhgghhppHgooooggggooOoopgHhX.",
-  "XhgghhhgHgooooOOOOooooopgHPX.",
-  "XXXghHhggghooooooooooooppsSX.",
-  "...XhHhpghhhhHgoooOooooggsfX.",
-  "....XHhpphhhHHgghoOohOOggsffX",
-  "....XhHffhheHHgghoOohhOghsfsX",
-  "....XhHfffhePggggooHHggghgfsX",
-  "....XhHfeegHHgggghhHHHHgggXX.",
-  "....XsffefgHHgPhgHHHPPHHgX...",
-  "....XssseSgHHgPhgHHHHPHHhX...",
-  ".....XssfgggpPPpgHHHHPHHgX...",
+  "............................XXXXXXX.........................",
+  "...........................XjkkkkkkX........................",
+  "..........................XjjkkKKKkjX.......................",
+  "..........................XjjkkKKKkjX.......................",
+  ".......................XXXgjjkkKKKkjjXXXX...................",
+  "....................XXXjjjgjjjkkKKkhhjjjjXX.................",
+  "...................XjjjjjjjhhhhHHHHhhjjkkkjX................",
+  "...................XjjjkkjjkkhhHHHHhkkKKkkkX................",
+  "....................XXkkkkkkkKkkKKKkkkKKkkX.................",
+  "......................XjjKkkKKkkKKKKkkkKKX..................",
+  ".....................XggggKjjKjkkkkkKkXXXX..................",
+  "....................XXXXgggjjjjjkjjjXX......................",
+  "........................XXggggSSSSSX........................",
+  ".......................XX.XgggSffffX........................",
+  "......................XgX.XhgggfSSssX.......................",
+  "......................XggXhhhggfefshhXXX....................",
+  ".....................XgggshghgsefefhhgHX....................",
+  "....................XhhHgshghHSSSsshhhHX....................",
+  "....................XggHHmhhhHHSSSshHhHHX...................",
+  "....................XhhHmfmhhHmmfffeHhHHX...................",
+  "....................XhhhHmmmHhHmfffeHhHHX...................",
+  "....................XehhhgHHHhHHeffeHhHhX...................",
+  "...................XhhhhhgHHHHHHHmseHhHhX...................",
+  "...................XhhhHHhghHHHHHmmmmhHgHX..................",
+  "...................XhhHHHhghhHHHhHHHHhhgHhX.................",
+  "..................XhhhhhhhghgHHHhhhhHhghHhX.................",
+  "..................XghhhhHgghghHHhhhhHhghhheX................",
+  ".................XhghhhhHghhhhhhhhgHggghhsfeX...............",
+  ".................XhhhhhhhghhhhhhhghhhhgggssXX...............",
+  ".................XHHhhhhhgghhogghhhhhhggssX.................",
+  ".................XHHggPPPgooooghhhgggoofsHX.................",
+  "................XhgghhppHgooooggggooOoopgHmX................",
+  "................XhgghhpHHgooooOOOOooooopgHmX................",
+  "................XXXghHMggghooooooooooooppsSX................",
+  "...................XhHMpghhhhHgoooOooooggsfX................",
+  "....................XHMpphhhHHgghoOohOOggsffX...............",
+  "....................XhHMphheHHgghoOohhOghsfsX...............",
+  "....................XhHMefhePggggooHHggghgfsX...............",
+  "....................XhHMeegHHgggghhHHHHgggXX................",
+  "....................XsffefgHHgPhgHHHHPHHgX..................",
+  "....................XssseSgHHgPhgHHHHPHHmX..................",
+  ".....................XssfgggpPPpgHHHHPHHgX..................",
 ];
 
 export const RONIN_LOWER = [
-  "......XhhhhhpPPphgHHPPPHhhX..",
-  "......XhhhhhpPPphgHHPPPHhhX..",
-  ".....XhhhpphPPPphgHfpppHehX..",
-  ".....XhhheePPPPphgHggphhehX..",
-  "....XhhhheePPPPpgggghhhhegX..",
-  "....XhhhheepPPpppghhhghheX...",
-  ".....XhhhhppPPhpXXhhhghhhX...",
-  ".....XghhhfpphhX..XgghhgX....",
-  "......XghhhhhhX...XhgggX.....",
-  "......XhgghhhX....XhhhX......",
-  "......XhhhggX.....XsssX......",
-  "......XhHHgX......XhhhX......",
-  "......XswwX.......XhhhhXX....",
-  "......XhHHX......XshhwwegX...",
-  "......XhHHX......XshhhhhhsX..",
-  "......XsHHgX.....XXXXXwwwsX..",
-  "......XgwHHX..........XXXXX..",
-  "......XwwwssX................",
-  "......XXXXXXX................",
+  "....................XhHMeegHHgggghhHHHHgggXX................",
+  "....................XsffefgHHgPhgHHHHPHHgX..................",
+  "....................XssseSgHHgPhgHHHHPHHmX..................",
+  ".....................XssfgggpPPpgHHHHPHHgX..................",
+  "......................XhhhhhpPPphgHHPPPHhhX.................",
+  ".....................XhhhpphPPPphgHfpppHehX.................",
+  ".....................XhhheePPPPphgHggphhehX.................",
+  "....................XhhhheePPPPpgggghhhhegX.................",
+  "....................XhhhheepPPpppghhhghheX..................",
+  ".....................XhhhhppPPhpXXhhhghhhX..................",
+  ".....................XghhhfpphhX..XgghhgX...................",
+  "......................XghhhhhhX...XhgggX....................",
+  "......................XhgghhhX....XhhhX.....................",
+  "......................XhhhggX.....XsssX.....................",
+  "......................XhHHgX......XhhhX.....................",
+  "......................XswwX.......XhhhhXX...................",
+  "......................XhHHX......XshhwwmgX..................",
+  "......................XhHHX......XshhhhhhsX.................",
+  "......................XsHHgX.....XXXXXwwwsX.................",
+  "......................XgwHHX..........XXXXX.................",
+  "......................XwwwssX...............................",
+  "......................XXXXXXX...............................",
+];
+
+export const RONIN_ATTACK = [
+  ".............................XXXX...........................",
+  "............................XkkkjXXX........................",
+  "...........................XjjkkKKKkX.......................",
+  "...........................XjjkKKKKkjX......................",
+  ".......................XXXXjjjjkkKKKjX......................",
+  ".....................XXjjjjhhjkkKKKKjgXXX...................",
+  "....................XjjjjjjjhhhhhhhHhgkjjXX.................",
+  "....................XjjjjjjkkhhhHHHHhkkkkkjX................",
+  ".....................XjjkjjkkKKKkjjkkkKKkkkjX...............",
+  ".....................XgkjjjkKKKKkKKkkkKKKkkX................",
+  "...................XXgggjjjkKKjKkKKKkkKKKKX.................",
+  "....................XggghhhhjjjjkkkkkkXXXX..................",
+  ".....................XgggggggegssjjjjX......................",
+  "....................XhhhhghggegSsSSSX.......................",
+  "...................XghhhhghgghhSfffSX.......................",
+  "X................XXhgHHHgghssshhfssX........................",
+  "XX..............XhhhhgHHhhgssssheffgXX......................",
+  "XmX...........XXhhhhhghHhhgssssheehhhgX.....................",
+  "XmmX........XXhhhhhhhghhhhgffssgghhhhhhX....................",
+  ".XmmX......XhhhhhhhhgghhhhgffffghhhhmmhhX...................",
+  "..XmmX....XhhhhhhhhhhghhhhgffffHhHHhmmhhX...................",
+  "...XmmX..XhhggggghhhghhhhhgffhHHggghhhhX....................",
+  "....XmmXXgggggghhghgghhhhhmffhhHgggHHhhX....................",
+  ".....XmmmmgggghhHghXghhHHhmhhhhggHHHhhhX....................",
+  "......XmmmseegHHHgX.XhhHHhhhhhhhhHhhhhX.....................",
+  ".......XmmseegHHgX..XhhhhhhhhhhhhhhhhhX.....................",
+  "........XmsseHHHX...XhhhhhghhghhhHHhhhX.....................",
+  ".........XssSffHX...XghhhhggghhhhhHHhX......................",
+  "..........XsSffHmX..XhhhhgggghhhhHHhhX......................",
+  "...........XSSfeeeXXghhggghhoohhhHHhhoX.....................",
+  "............XSSeessssggggffhooHHHHhhooX.....................",
+  ".............XXssssssgggHHHHoogHHhhgooX.....................",
+  "...............XXssssfffpgggoggghhhgXX......................",
+  ".................XssSffffgoooogghhgX........................",
+  "...............XXsssSsffommmoooghggX........................",
+  "............XXXssssssssoommmommggghhX.......................",
+  "..........XXsssssshhhsSoommMMmmgghhhhX......................",
+  "........XXsssssshhhHHhhogghhMMMHHgghhhX.....................",
+  "......XXsssXXXgghhHHPPhhhghhmmmMMmmmggpX....................",
+  "....XXsssXX...XhhHHHPPHHhgHHhhhmmMMmmmpX....................",
+  "...XsssXX....XgghHHPfHHHhgHHhPHHmmmMMMPPXX..................",
+  "...XXXX......XhhppefHHHHhgHHHPHHPhhhmmMMmmXXX...............",
+  "............XhhhpppmHHPPhggPHggghhhhPPPMMMMmmXXX............",
+  "...........XhhhhpppmHHPphgpPHhhhhhhhPPPPPmmMMMMmXXX.........",
+  "..........XhhhhppppppppphgpPghhhhhhhhPPPPPpmXXXmmmmXXX......",
+  "..........XhhhpppPPpphhhhXXXXXhhhhhhhhhhPPpX...XXXMMmmXXX...",
+  "..........XhhhpPPPPPphhhX.....XXhhgghpphpppX......XXMMMmmXXX",
+  "..........XhhhhPPPPPhhhX........XgpppphhppgX........XXXXXXX.",
+  "..........XhhhhhPPhhhhX..........XhhhhhhhgX.................",
+  ".........XhhhhhhhhhhhhX...........XggggghX..................",
+  ".........XhhhhhhhhhhXX.............XhhhmX...................",
+  "........XshhhhhhXXXX...............XhhhmX...................",
+  ".......XhsshhhXX...................XhssX....................",
+  ".......XhsssXX.....................XsssX....................",
+  "......XphssX.......................XhhPX....................",
+  "......XpppX.......................XghPPeX...................",
+  ".....XshpwX.......................XshPPffXX.................",
+  ".....XwhhhgX......................XsghhhhhsX................",
+  ".....XwwswwX......................XXXXghffsX................",
+  ".....XXXXXXX..........................XXXXXX................",
 ];
 
 const POST = [
@@ -290,30 +358,38 @@ export function Dojo({
         <rect x="246" y="41" width="7" height="1" fill="var(--color-ink-line)" />
 
         {/*
-          The ronin. Feet land on the floor line at y=78.
+          The ronin. Feet land on the floor line at y=77.
 
-          The blade is drawn only while a strike is landing, so the resting
-          pose keeps the sword sheathed at the hip where the sprite carries it.
-          A drawn katana held out horizontally from a hanging hand looked wrong;
-          a blade that appears for the length of the cut reads as the draw
-          itself, which is what a ronin with one sword would actually do.
+          A strike swaps the whole figure for the attack pose from the sprite
+          sheet rather than rotating a drawn rectangle past a standing body.
+          Both poses are cropped to one shared frame and aligned on the hat, so
+          the swap does not teleport the body sideways; the forward drive comes
+          from anim-lunge, deliberately, rather than from a framing accident.
+
+          The blade belongs to the pose, so there is no blade at rest — the
+          sprite carries its sword sheathed, which is what a ronin with one
+          sword would actually do between cuts.
         */}
         <g
           className={
             mood === "strike" ? "anim-lunge" : mood === "miss" ? "anim-flinch" : ""
           }
         >
-          <PixelArt map={RONIN_LOWER} palette={palette} x={104} y={59} />
-          <g className="anim-breathe">
-            <PixelArt map={RONIN_UPPER} palette={palette} x={104} y={18} />
-          </g>
-
-          {mood === "strike" && (
-            <g className="anim-slash" style={{ transformOrigin: "132px 54px" }}>
-              <rect x="128" y="52" width="9" height="4" fill="var(--color-timber)" />
-              <rect x="137" y="52" width="34" height="3" fill="var(--color-steel)" />
-              <rect x="137" y="55" width="34" height="1" fill="var(--color-steel-shadow)" />
-            </g>
+          {mood === "strike" ? (
+            <PixelArt map={RONIN_ATTACK} palette={palette} x={110} y={18} />
+          ) : (
+            <>
+              {/*
+                Drawn before the torso and overlapping it by OVERLAP rows, so
+                the breath lifts the torso off real hakama rather than off a
+                hole. An earlier version butted the two halves edge to edge and
+                a 2px lift opened a transparent line straight across the hips.
+              */}
+              <PixelArt map={RONIN_LOWER} palette={palette} x={110} y={56} />
+              <g className="anim-breathe">
+                <PixelArt map={RONIN_UPPER} palette={palette} x={110} y={18} />
+              </g>
+            </>
           )}
         </g>
 
@@ -323,14 +399,19 @@ export function Dojo({
             mood === "strike" ? "anim-recoil" : mood === "miss" ? "anim-miss" : ""
           }
         >
-          <PixelArt map={POST} palette={palette} x={166} y={39} />
+          <PixelArt map={POST} palette={palette} x={164} y={38} />
         </g>
 
-        {/* The contact arc, drawn only at the moment of the hit. */}
+        {/*
+          The contact flash, at the height the blade actually meets the post
+          (the tip sits at y=64) rather than running the full height of it. A
+          bar the length of the whole post read as a second object standing in
+          front of it instead of as an impact.
+        */}
         {mood === "strike" && (
           <g className="anim-arc">
-            <rect x="164" y="36" width="2" height="42" fill="var(--color-paper)" />
-            <rect x="160" y="42" width="2" height="30" fill="var(--color-jade)" />
+            <rect x="162" y="54" width="2" height="20" fill="var(--color-paper)" />
+            <rect x="158" y="59" width="2" height="11" fill="var(--color-jade)" />
           </g>
         )}
 
@@ -343,7 +424,7 @@ export function Dojo({
         {award && !quiet && (
           <g key={award.seq} className="anim-hit-scene">
             <text
-              x="173"
+              x="171"
               y="26"
               textAnchor="middle"
               fill="var(--color-jade)"

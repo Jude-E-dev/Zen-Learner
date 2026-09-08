@@ -1,0 +1,36 @@
+{
+  "group_id": "ae575d22-79ad-403d-8dc0-9fd41d83ab22",
+  "states": [
+    {
+      "character": {
+        "id": "60f90f2e-9046-4d9d-8ae2-35e87bf47bbe",
+        "name": "Sword attacking (fro",
+        "prompt": "Rough ronin with straw hat wearing tattered kimono, with eyes covered by straw hat",
+        "size": {
+          "width": 64,
+          "height": 64
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "side",
+        "created_at": "2026-09-08T01:58:20.370793+00:00"
+      },
+      "folder": "Sword_attacking_fro",
+      "frames": {
+        "rotations": {
+          "south": "Sword_attacking_fro/rotations/south.png",
+          "south-east": "Sword_attacking_fro/rotations/south-east.png",
+          "east": "Sword_attacking_fro/rotations/east.png",
+          "north-east": "Sword_attacking_fro/rotations/north-east.png",
+          "north": "Sword_attacking_fro/rotations/north.png",
+          "north-west": "Sword_attacking_fro/rotations/north-west.png",
+          "west": "Sword_attacking_fro/rotations/west.png",
+          "south-west": "Sword_attacking_fro/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-09-08T02:05:21.505543"
+}
