@@ -222,7 +222,7 @@ Synthesized from this review's findings. Each task derives from a specific findi
   - Surfaced by: Issue 8 — unspecced waiting state in a keyboard-first flow
   - Files: `app/play/`
   - Verify: throttled network shows the transition, not a freeze; repeated Enter fires one request
-- [ ] **T8 (P2, human: ~3h / CC: ~20m)** — `lib/summary` — Zod-validated permalink decode + fallback page
+- [x] **T8 (P2, human: ~3h / CC: ~20m)** — `lib/summary` — Zod-validated permalink decode + fallback page — **done 2026-09-08**
   - Surfaced by: Issue 6 — malformed blob had no defined behavior
   - Files: `lib/summary/`, `app/summary/`
   - Verify: truncated and tampered blobs both render the fallback, never a crash

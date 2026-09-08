@@ -1,8 +1,8 @@
 "use client";
 
-import type { SessionState } from "@/lib/game/session";
 import { MAX_TIER } from "@/lib/game/selector";
-import type { RankProgress } from "@/lib/game/ranks";
+import { Dojo } from "@/components/Dojo";
+import type { Summary } from "@/lib/summary/summary";
 
 /**
  * The post-session card, composed to be screenshotted.
@@ -10,33 +10,31 @@ import type { RankProgress } from "@/lib/game/ranks";
  * Square by construction so it survives being dropped into a chat or a feed
  * without cropping, and every number is one a person would actually want to
  * show someone: what you got through, how deep you went, how long you held it
- * together. Permalink encoding lands in stage 6; this is the artifact itself.
+ * together.
+ *
+ * It takes a plain Summary rather than the live session, which is what lets
+ * the same card render from a permalink. A shared card and a just-finished one
+ * are the same component reading the same shape.
+ *
+ * The ronin is on it because a card with *your* ronin is a different object
+ * from a card with a percentage on it, and sharing is the only distribution
+ * channel this thing has.
  */
 export function SummaryCard({
-  state,
-  rank,
-  sessionNumber,
-  onRestart,
-  onExit,
+  summary,
+  actions,
 }: {
-  state: SessionState;
-  rank: RankProgress;
-  sessionNumber: number;
-  onRestart: () => void;
-  /** Leave the session behind and return to the hall, where the armoury is. */
-  onExit: () => void;
+  summary: Summary;
+  /** Buttons under the card. A shared card has different ones to a live one. */
+  actions?: React.ReactNode;
 }) {
-  const { answered, correct, xp, bestStreak, selector, events } = state;
-  const accuracy = answered === 0 ? 0 : Math.round((correct / answered) * 100);
-  const pauses = events.filter((e) => e.type === "pause_invoked").length;
-
-  // Did getting unstuck actually work? This is hypothesis one, on screen.
-  const unstuck = events.filter(
-    (e) => e.type === "answer_submitted" && e.verdict === "correct" && e.afterPause,
-  ).length;
+  const {
+    sessionNumber, answered, correct, accuracy, xp,
+    bestStreak, tier, rankId, rankName, pauses, unstuck, avatar,
+  } = summary;
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex w-full flex-col items-center gap-6">
       <div
         className="pixel-frame bg-ink-soft flex aspect-square w-full max-w-[420px] flex-col justify-between p-7"
         data-testid="summary-card"
@@ -50,57 +48,48 @@ export function SummaryCard({
           </div>
           <div className="text-right">
             <p className="text-paper-dim text-label tracking-[0.2em]">RANK</p>
-            <p className="text-indigo text-lg leading-tight">{rank.current.name}</p>
+            <p className="text-indigo text-lg leading-tight">{rankName}</p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <span className="text-paper-dim text-label tracking-widest">ACCURACY</span>
-          <span className="text-gold text-6xl leading-none tabular-nums">
-            {accuracy}
-            <span className="text-2xl">%</span>
-          </span>
-          <span className="text-paper-dim text-xs">
-            {correct} of {answered} answered
-          </span>
+        {/* Fills the room the square left over, and makes the card yours. */}
+        <Dojo
+          mood="idle"
+          combo={bestStreak}
+          avatar={avatar}
+          rankId={rankId}
+          className="h-24 shrink-0"
+        />
+
+        <div className="flex items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-paper-dim text-label tracking-widest">ACCURACY</span>
+            <span className="text-gold text-6xl leading-none tabular-nums">
+              {accuracy}
+              <span className="text-2xl">%</span>
+            </span>
+            <span className="text-paper-dim text-xs">
+              {correct} of {answered} answered
+            </span>
+          </div>
+
+          {pauses > 0 && (
+            <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-widest">
+              PAUSED {pauses}×
+              <br />
+              GOT UNSTUCK {unstuck}×
+            </p>
+          )}
         </div>
 
-        <dl className="grid grid-cols-3 gap-3 border-t-2 border-ink-line pt-4">
-          <Cell label="XP" value={xp} tone="jade" />
-          <Cell label="BEST RUN" value={bestStreak} />
-          <Cell label="TIER" value={`${selector.tier}/${MAX_TIER}`} tone="gold" />
+        <dl className="border-ink-line grid grid-cols-3 gap-3 border-t-2 pt-4">
+          <Cell label="XP" value={xp} tone="text-jade" />
+          <Cell label="BEST RUN" value={bestStreak} tone="text-paper" />
+          <Cell label="TIER" value={`${tier}/${MAX_TIER}`} tone="text-gold" />
         </dl>
-
-        {pauses > 0 && (
-          <p className="text-paper-dim text-label leading-relaxed">
-            PAUSED {pauses}× · GOT UNSTUCK {unstuck}×
-          </p>
-        )}
       </div>
 
-      {/*
-        Two ways out, because for a long time there was one and it led back to
-        where you already were. GO AGAIN restarts in place; the hall is where
-        the armoury lives, and until now nothing on this screen could reach it.
-      */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={onRestart}
-          autoFocus
-          className="focus-ring pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
-        >
-          GO AGAIN
-        </button>
-
-        <button
-          type="button"
-          onClick={onExit}
-          className="focus-ring pixel-frame text-paper-dim bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:border-gold hover:text-paper"
-        >
-          ◂ BACK TO THE HALL
-        </button>
-      </div>
+      {actions}
     </div>
   );
 }
@@ -112,13 +101,12 @@ function Cell({
 }: {
   label: string;
   value: string | number;
-  tone?: "jade" | "gold";
+  tone: string;
 }) {
-  const color = tone === "jade" ? "text-jade" : tone === "gold" ? "text-gold" : "text-paper";
   return (
     <div className="flex flex-col gap-1">
       <dt className="text-paper-dim text-label tracking-widest">{label}</dt>
-      <dd className={`${color} text-xl leading-none tabular-nums`}>{value}</dd>
+      <dd className={`${tone} text-2xl leading-none tabular-nums`}>{value}</dd>
     </div>
   );
 }

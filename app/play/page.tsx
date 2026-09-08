@@ -25,6 +25,8 @@ import {
 import { rankFor } from "@/lib/game/ranks";
 import { useProfile } from "@/lib/persistence/useProfile";
 import { ArmouryPanel } from "@/components/ArmouryPanel";
+import { summaryFromSession } from "@/lib/summary/summary";
+import { summaryUrl } from "@/lib/summary/permalink";
 import type { AvatarChoice } from "@/lib/game/avatar";
 import { masteryWithSession, downloadJsonl } from "@/lib/persistence/profile";
 
@@ -54,6 +56,7 @@ export default function PlayPage() {
    * being right there is what makes the preview worth anything.
    */
   const [armoury, setArmoury] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Focus follows the loop, so typing always lands somewhere useful.
   useEffect(() => {
@@ -208,19 +211,64 @@ export default function PlayPage() {
   }
 
   if (state.phase === "summary") {
+    const summary = summaryFromSession(
+      state,
+      rank.current.id,
+      // The card is shown either side of the commit that increments this, so
+      // clamp rather than offset: 0 before, the real count after.
+      Math.max(1, profile.sessions),
+      profile.avatar,
+    );
+
+    async function share() {
+      const url = summaryUrl(summary, window.location.origin);
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2400);
+      } catch {
+        // Clipboard access can be refused outright (insecure origin, denied
+        // permission). Putting the link in the URL bar still leaves the
+        // learner something they can copy by hand, which beats a dead button.
+        window.location.href = url;
+      }
+    }
+
     return (
       <main className="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center gap-6 px-5 py-10">
         <SummaryCard
-          state={state}
-          rank={rank}
-          // The card is shown either side of the commit that increments this,
-          // so clamp rather than offset: 0 before, the real count after.
-          sessionNumber={Math.max(1, profile.sessions)}
-          onRestart={() => {
-            setState(startSession(POOL));
-            setInput("");
-          }}
-          onExit={() => router.push("/")}
+          summary={summary}
+          actions={
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setState(startSession(POOL));
+                  setInput("");
+                }}
+                autoFocus
+                className="focus-ring pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
+              >
+                GO AGAIN
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void share()}
+                className="focus-ring pixel-frame text-paper-dim bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:border-gold hover:text-paper"
+              >
+                {copied ? "LINK COPIED" : "COPY SHARE LINK"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="focus-ring pixel-frame text-paper-dim bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:border-gold hover:text-paper"
+              >
+                ◂ BACK TO THE HALL
+              </button>
+            </div>
+          }
         />
         {process.env.NODE_ENV === "development" && (
           <button
