@@ -90,26 +90,25 @@ small, worthwhile follow-up, since sharing is this project's only distribution c
 
 ## Design polish deferred from the 2026-09-08 review
 
-Four findings graded polish, left undone deliberately. Full report in
+Two of the four are done. Full report in
 `~/.gstack/projects/Zen_Learner/designs/design-audit-20260908/`.
 
-- **The play route has no `<h1>`.** `Hud`'s `<header>` landmark contains no heading, and the
-  `<h2>`s in `PausePanel` and `NotationHelp` appear with no ancestor `<h1>` on that route. A
-  screen-reader user gets no document title for the screen they spend the whole session on.
-- **No pixel typeface.** `--font-pixel` is a plain system monospace stack. The retro read is
-  carried entirely by `image-rendering: pixelated`, the SVG art and the offset box-shadows. One
-  dropped technique away from looking like generic dark-mode UI. A real bitmap webfont would do
-  more for the 16-bit feel than any other single change.
-- **The hall grows a tall ceiling on narrow viewports.** The scene is 3:1 and anchors to the
-  bottom of its container, so on mobile the room gets a large empty upper half. It now paints
-  the wall colour so it reads as a high ceiling rather than a seam, but the ronin ends up small
-  and low. `preserveAspectRatio="slice"` would fill it and is a no-op at desktop's exact 3:1,
-  but starts cropping the training post below roughly a 1.75:1 container — too fragile to take
-  without art made for it.
-- **Reduced motion is verified by source, not by observation.** All nine animation classes are
-  in the `prefers-reduced-motion` block in `app/globals.css`, but the headless browser used for
-  this review could not emulate the preference, so nobody has actually watched the app with it
-  on.
+- ~~**The play route has no `<h1>`.**~~ Done 2026-09-08. Both the play route
+  and a shared summary now carry a visually hidden heading.
+- ~~**No pixel typeface.**~~ Done 2026-09-08. Silkscreen (OFL, self-hosted via
+  `next/font`) on the display layer only; body copy, the answer input and
+  anything KaTeX touches stay monospace.
+- **The hall grows a tall ceiling on narrow viewports.** The scene is 3:1 and
+  anchors to the bottom of its container, so on mobile the room gets a large
+  empty upper half. It paints the wall colour so it reads as a high ceiling
+  rather than a seam, but the ronin ends up small and low.
+  `preserveAspectRatio="slice"` would fill it and is a no-op at desktop's exact
+  3:1, but starts cropping the training post below roughly a 1.75:1 container —
+  too fragile to take without art made for it.
+- **Reduced motion is verified by source, not by observation.** All ten
+  animation classes are in the `prefers-reduced-motion` block in
+  `app/globals.css`, but the headless browser used for the review could not
+  emulate the preference, so nobody has watched the app with it on.
 
 ---
 
