@@ -176,15 +176,27 @@ Execution: finish step 1, then launch B, C, and D in parallel worktrees alongsid
 
 ## Next Steps
 
+**Status as of 2026-09-08:** stages 1, 2, 3, 4, 6, 7 and 8 are done. Stage 5 and
+5b (the constrained tutor and its eval suite) are the only remaining work, and
+both are blocked on an `ANTHROPIC_API_KEY` in `.env.local`.
+
 1. Content schema + Zod validator + `mathjs` equivalence checker **including antiderivative and domain-safety handling** + 10 real, hand-verified questions, with tests.
 2. Zen loop with authored hints only, no AI — playable end to end, including the unparseable-input third state and the notation-help trigger.
 3. Presentation pass: pixel HUD, feedback juice, `prefers-reduced-motion` handling.
 4. Progression: XP, mastery-gated ranks, IndexedDB persistence behind an interface with in-memory fallback.
 5. Constrained tutor layer: fragment-extraction leak validation, retry-then-fallback, cost logging, pause-transition latency treatment.
 5b. **Tutor eval suite: ~15-20 fixtures, 4 checks, wired to run before any prompt change ships.**
-6. Session summary card + permalink with validated decode and friendly fallback.
-7. Remaining questions to ~30, all verified.
-8. Analytics: IndexedDB event store, dev-only export, script answering the two hypotheses.
+6. Session summary card + permalink with validated decode and friendly fallback. **Done 2026-09-08.**
+7. Remaining questions to ~30, all verified. **Done.**
+8. Analytics: IndexedDB event store, dev-only export, script answering the two hypotheses. **Done 2026-09-08** — `pnpm analytics <file.jsonl>`.
+
+   One correction the build made to the plan: the pause hypothesis is measured
+   against *unaided retries*, not against all attempts. "Attempts after a pause
+   are 79% correct" says nothing on its own, because a second look at a
+   question is easier whether or not anyone helped. The comparison that carries
+   information is the same situation minus the ladder. The unit is a **serving**
+   rather than a question, since the same question recurs within a session and
+   the app'"'"'s own `afterPause` flag resets when a new question is served.
 
 Commit at each stage (continuous checkpointing is on for this project). Keep a `DECISIONS.md` recording anything a future contributor would otherwise re-litigate.
 

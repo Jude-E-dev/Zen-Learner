@@ -9,7 +9,8 @@
     "start": "next start",
     "validate:content": "tsx scripts/validate-content.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "analytics": "tsx scripts/analytics.ts"
   },
   "dependencies": {
     "idb": "latest",
