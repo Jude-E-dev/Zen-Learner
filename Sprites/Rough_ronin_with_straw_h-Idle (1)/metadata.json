@@ -1,0 +1,36 @@
+{
+  "group_id": "ae575d22-79ad-403d-8dc0-9fd41d83ab22",
+  "states": [
+    {
+      "character": {
+        "id": "9be4a4f1-9df0-4366-8203-45df23865516",
+        "name": "Idle",
+        "prompt": "Rough ronin with straw hat wearing tattered kimono, with eyes covered by straw hat",
+        "size": {
+          "width": 64,
+          "height": 64
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "side",
+        "created_at": "2026-09-08T01:06:58.032843+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-09-08T01:10:15.574474"
+}

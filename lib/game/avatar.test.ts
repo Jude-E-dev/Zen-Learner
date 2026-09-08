@@ -95,26 +95,27 @@ describe("resolvePalette", () => {
   it("colours every character the ronin sprite uses", () => {
     const used = charactersUsedBy([RONIN_UPPER, RONIN_LOWER]);
     const palette = resolvePalette(defaultAvatar(), "ashigaru");
-    // `L` is the one fixed sprite colour and lives in the Dojo, not the avatar.
+    // The outline is the Dojo's, not the avatar's — it never recolours.
     for (const char of used) {
-      if (char === "L") continue;
+      if (char === "X") continue;
       expect(palette[char], `no colour for sprite character "${char}"`).toBeDefined();
     }
   });
 
   it("applies an unlocked choice", () => {
     const palette = resolvePalette(
-      { hat: "gilt", robe: "moss", obi: "jade" },
+      { hat: "gilt", robe: "moss", obi: "jade", hakama: "snow" },
       "kensei",
     );
     expect(palette.K).toBe(findOption("hat", "gilt")!.colors.K);
     expect(palette.H).toBe(findOption("robe", "moss")!.colors.H);
     expect(palette.O).toBe(findOption("obi", "jade")!.colors.O);
+    expect(palette.P).toBe(findOption("hakama", "snow")!.colors.P);
   });
 
   it("falls back to the default when a slot is not unlocked yet", () => {
     const palette = resolvePalette(
-      { hat: "gilt", robe: "indigo", obi: "blood" },
+      { hat: "gilt", robe: "indigo", obi: "blood", hakama: "olive" },
       "ashigaru",
     );
     expect(palette.K).toBe(findOption("hat", "straw")!.colors.K);
@@ -122,14 +123,14 @@ describe("resolvePalette", () => {
 
   it("falls back to the default when a slot names an option that is gone", () => {
     const palette = resolvePalette(
-      { hat: "sombrero", robe: "indigo", obi: "blood" },
+      { hat: "sombrero", robe: "indigo", obi: "blood", hakama: "olive" },
       "kensei",
     );
     expect(palette.K).toBe(findOption("hat", "straw")!.colors.K);
   });
 
   it("never drops the fixed base colours", () => {
-    const palette = resolvePalette({ hat: "x", robe: "y", obi: "z" }, "ashigaru");
+    const palette = resolvePalette({ hat: "x", robe: "y", obi: "z", hakama: "q" }, "ashigaru");
     for (const [char, colour] of Object.entries(BASE_PALETTE)) {
       expect(palette[char]).toBe(colour);
     }
@@ -138,18 +139,20 @@ describe("resolvePalette", () => {
 
 describe("normalizeAvatar", () => {
   it("keeps known ids", () => {
-    expect(normalizeAvatar({ hat: "ash", robe: "moss", obi: "gold" })).toEqual({
+    expect(normalizeAvatar({ hat: "ash", robe: "moss", obi: "gold", hakama: "rust" })).toEqual({
       hat: "ash",
       robe: "moss",
       obi: "gold",
+      hakama: "rust",
     });
   });
 
   it("replaces unknown ids with the default for that slot", () => {
-    expect(normalizeAvatar({ hat: "ash", robe: "nonsense", obi: 7 })).toEqual({
+    expect(normalizeAvatar({ hat: "ash", robe: "nonsense", obi: 7, hakama: "olive" })).toEqual({
       hat: "ash",
       robe: "indigo",
       obi: "blood",
+      hakama: "olive",
     });
   });
 

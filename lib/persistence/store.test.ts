@@ -138,8 +138,20 @@ describe("migrate — upgrading a stored profile", () => {
   });
 
   it("keeps an avatar that is already stored", () => {
+    const kit = { hat: "ash", robe: "moss", obi: "gold", hakama: "rust" };
+    expect(migrate({ ...v1, version: 2, avatar: kit }).avatar).toEqual(kit);
+  });
+
+  // The hakama slot arrived with the redrawn sprite, after profiles already
+  // existed. Those keep the kit they chose and gain the new slot's default.
+  it("fills in a slot that did not exist when the avatar was saved", () => {
     const stored = { ...v1, version: 2, avatar: { hat: "ash", robe: "moss", obi: "gold" } };
-    expect(migrate(stored).avatar).toEqual({ hat: "ash", robe: "moss", obi: "gold" });
+    expect(migrate(stored).avatar).toEqual({
+      hat: "ash",
+      robe: "moss",
+      obi: "gold",
+      hakama: "olive",
+    });
   });
 
   it("repairs an avatar naming options that no longer exist", () => {

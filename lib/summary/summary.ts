@@ -30,8 +30,13 @@ export const summarySchema = z.object({
   r: z.enum(RANKS.map((rank) => rank.id) as [string, ...string[]]),
   p: z.number().int().min(0).max(100_000),
   u: z.number().int().min(0).max(100_000),
-  /** Hat, robe, obi — so a shared card wears the ronin that earned it. */
-  av: z.tuple([z.string().max(32), z.string().max(32), z.string().max(32)]),
+  /**
+   * The kit, positionally by AVATAR_SLOTS, so a shared card wears the ronin
+   * that earned it. Length is a range rather than a fixed tuple: a link
+   * written before a slot existed is still a good link, and normalizeAvatar
+   * fills whatever is missing with that slot's default.
+   */
+  av: z.array(z.string().max(32)).min(1).max(8),
 });
 
 export type SummaryBlob = z.infer<typeof summarySchema>;
@@ -76,11 +81,9 @@ export function summaryFromBlob(blob: SummaryBlob): Summary {
     rankName: rankNameFor(blob.r),
     pauses: blob.p,
     unstuck: Math.min(blob.u, correct),
-    avatar: normalizeAvatar({
-      hat: blob.av[0],
-      robe: blob.av[1],
-      obi: blob.av[2],
-    }),
+    avatar: normalizeAvatar(
+      Object.fromEntries(AVATAR_SLOTS.map((slot, i) => [slot, blob.av[i]])),
+    ),
   };
 }
 
@@ -96,7 +99,7 @@ export function blobFromSummary(summary: Summary): SummaryBlob {
     r: summary.rankId,
     p: summary.pauses,
     u: summary.unstuck,
-    av: AVATAR_SLOTS.map((slot) => summary.avatar[slot]) as [string, string, string],
+    av: AVATAR_SLOTS.map((slot) => summary.avatar[slot]),
   };
 }
 

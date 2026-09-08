@@ -3,14 +3,24 @@
 /**
  * The practice hall.
  *
- * The spec asks for "chunky pixel-font damage numbers" and "a satisfying hit",
- * which only means something if there is something being hit. So: a ronin on
- * the left, a training post on the right, and every correct answer is a strike
- * that lands. XP is damage. The streak is a combo. Getting stuck quiets the
- * whole room rather than just swapping a panel.
+ * A ronin on the left, a training post on the right, and every correct answer
+ * is a strike that lands. XP is damage. The streak is a combo. Getting stuck
+ * quiets the whole room rather than just swapping a panel.
  *
- * Everything is drawn from pixel maps below — no sprite packs, no licensing
- * ambiguity (constraint #10), and editing the art means editing a string.
+ * The figure is traced from the 8-direction idle sheet in Sprites/, using the
+ * south-east frame: a 3/4 view facing the post, which keeps the face, the
+ * kimono lapels and the obi knot readable in a way the pure profile does not.
+ *
+ * The source is a 64-colour painterly render, and 64 colours is the opposite
+ * of 16-bit. What carried over is the pose, the silhouette and the costume;
+ * what changed is that every material now runs on a tight ramp of two or three
+ * tones, the dithering is gone, and the whole scene sits on one pixel grid —
+ * every element is drawn at one art pixel per viewBox unit, so nothing is
+ * secretly half the resolution of the thing beside it.
+ *
+ * Everything is still drawn from the character maps below. No sprite packs, no
+ * licensing ambiguity (constraint #10), and editing the art means editing a
+ * string.
  */
 
 import {
@@ -21,97 +31,151 @@ import {
 
 export type DojoMood = "idle" | "strike" | "miss" | "quiet";
 
-const PX = 2;
-
 /**
- * Colours the learner cannot change. Everything they can — hat, robe, obi —
- * arrives through the resolved palette in lib/game/avatar.ts, so the sprite is
- * no longer single-skin.
+ * Colours the learner cannot change: their own skin, the leather and wraps
+ * that hold the kit together, and the room itself. Everything they can change
+ * arrives through the resolved palette in lib/game/avatar.ts.
  */
 const FIXED: Record<string, string> = {
-  L: "#23283a", // hakama and legs
+  X: "#0a0b10", // the silhouette
+  T: "#7a5a3a", // post timber
+  t: "#52341f", // post timber, shaded
+  R: "#cbb27a", // straw binding
+  r: "#9a8555", // straw binding, shaded
 };
 
-/**
- * The face reads as a face because it is lit. An earlier pass shadowed it to
- * near-black, which at this scale just looked like a gap between the hat and
- * the shoulders.
- */
-/*
- * Split at the hips so the idle breath can lift the torso while the feet stay
- * planted. Lifting the whole figure reads as hopping, not breathing.
- */
-export const RONIN_UPPER = [
-  ".......KKKKKK.......",
-  ".....KKKKKKKKKK.....",
-  "...KKKKKKKKKKKKKK...",
-  "..KKKKKKKKKKKKKKKK..",
-  ".kkkkkkkkkkkkkkkkkk.",
-  "........ffff........",
-  "........feef........",
-  "........ffff........",
-  ".......HHHHHH.......",
-  "......HHHHHHHH......",
-  ".....HHHHHHHHHH.....",
-  "....AHHHHHHHHHHA....",
-  "....AHHHHHHHHHHA....",
-  "....AOOOOOOOOOOA....",
-  "....gHHHHHHHHHHg....",
-  ".....HHHHHHHHHH.....",
-  ".....hHHHHHHHHh.....",
-];
 
 /*
- * The first row is a duplicate of the leg tops, drawn one pixel high so it
- * tucks under the haori at rest. The legs paint before the torso, so at rest
- * that row is hidden; when the breath lifts the torso it is what fills the
- * gap, instead of a slit of back wall opening across the hips.
+ * Split at the hips so the idle breath can lift the torso while the feet stay
+ * planted. Lifting the whole figure reads as hopping, not breathing. The first
+ * row of RONIN_LOWER duplicates the row above it and is drawn one pixel high,
+ * so the lifted frame shows hakama rather than a slit of back wall.
  */
+export const RONIN_UPPER = [
+  "............XXXXXXX..........",
+  "...........XjkkkkkkX.........",
+  "..........XjjkkKKKkjX........",
+  "..........XjjkkKKKkjX........",
+  ".......XXXgjjkkKKKkjjXXXX....",
+  "....XXXjjjgjjjkkKKkhhjjjjXX..",
+  "...XjjjjjjjhhhhHHHHhhjjkkkjX.",
+  "...XjjjkkjjkkhhHHHHhkkKKkkkX.",
+  "....XXkkkkkkkKkkKKKkkkKKkkX..",
+  "......XjjKkkKKkkKKKKkkkKKX...",
+  ".....XggggKjjKjkkkkkKkXXXX...",
+  "....XXXXgggjjjjjkjjjXX.......",
+  "........XXggggSSSSSX.........",
+  ".......XX.XgggSffffX.........",
+  "......XgX.XhgggfSSssX........",
+  "......XggXhhhggfefshhXXX.....",
+  ".....XgggshghgsefefhhgHX.....",
+  "....XhhHhshghHSSSsshhhHX.....",
+  "....XggHhhhhhHHSSSshHhHHX....",
+  "....XhhHhfhhhHHhfffeHhHHX....",
+  "....XhhhHhhhHhHHfffeHhHHX....",
+  "....XehhhgHHHhHHeffeHhHhX....",
+  "...XhhhhhgHHHHHHHhseHhHhX....",
+  "...XhhhHHhghHHHHHhSghhHgHX...",
+  "...XhhHHHhghhHHHhHHgHhhgHhX..",
+  "..XhhhhhhhghgHHHhhhhHhghHhX..",
+  "..XghhhhHgghghHHhhhhHhghhheX.",
+  ".XhghhhhHghhhhhhhhgHggghhsfeX",
+  ".XhhhhhhhghhhhhhhghhhhgggssXX",
+  ".XHHhhhhhgghhogghhhhhhggssX..",
+  ".XHHggPPPgooooghhhgggoofsHX..",
+  "XhgghhppHgooooggggooOoopgHhX.",
+  "XhgghhhgHgooooOOOOooooopgHPX.",
+  "XXXghHhggghooooooooooooppsSX.",
+  "...XhHhpghhhhHgoooOooooggsfX.",
+  "....XHhpphhhHHgghoOohOOggsffX",
+  "....XhHffhheHHgghoOohhOghsfsX",
+  "....XhHfffhePggggooHHggghgfsX",
+  "....XhHfeegHHgggghhHHHHgggXX.",
+  "....XsffefgHHgPhgHHHPPHHgX...",
+  "....XssseSgHHgPhgHHHHPHHhX...",
+  ".....XssfgggpPPpgHHHHPHHgX...",
+];
+
 export const RONIN_LOWER = [
-  ".....LLLL..LLLL.....",
-  ".....LLLL..LLLL.....",
-  ".....LLLL..LLLL.....",
-  ".....LLLL..LLLL.....",
-  "....LLLLL..LLLLL....",
-  "...LLLLLL..LLLLLL...",
+  "......XhhhhhpPPphgHHPPPHhhX..",
+  "......XhhhhhpPPphgHHPPPHhhX..",
+  ".....XhhhpphPPPphgHfpppHehX..",
+  ".....XhhheePPPPphgHggphhehX..",
+  "....XhhhheePPPPpgggghhhhegX..",
+  "....XhhhheepPPpppghhhghheX...",
+  ".....XhhhhppPPhpXXhhhghhhX...",
+  ".....XghhhfpphhX..XgghhgX....",
+  "......XghhhhhhX...XhgggX.....",
+  "......XhgghhhX....XhhhX......",
+  "......XhhhggX.....XsssX......",
+  "......XhHHgX......XhhhX......",
+  "......XswwX.......XhhhhXX....",
+  "......XhHHX......XshhwwegX...",
+  "......XhHHX......XshhhhhhsX..",
+  "......XsHHgX.....XXXXXwwwsX..",
+  "......XgwHHX..........XXXXX..",
+  "......XwwwssX................",
+  "......XXXXXXX................",
 ];
 
 const POST = [
-  "...SSSS...",
-  "..SSSSSS..",
-  "..SSSSSS..",
-  "...PPPP...",
-  "...PPPP...",
-  "..RRRRRR..",
-  "...PPPP...",
-  "...PPPP...",
-  "..RRRRRR..",
-  "...PPPP...",
-  "...PPPP...",
-  "..RRRRRR..",
-  "...PPPP...",
-  "...PPPP...",
-  "...PPPP...",
-  "..PPPPPP..",
-  ".PPPPPPPP.",
+  "...XXXXXXXX...",
+  "..XRRRRRRRRX..",
+  "..XRrrRRrrRX..",
+  "..XRRRRRRRRX..",
+  "..XRRrRRrRRX..",
+  "..XRRRRRRRRX..",
+  "..XrRRRRRRrX..",
+  "..XRRRRRRRRX..",
+  "..XRRrRRrRRX..",
+  "..XRRRRRRRRX..",
+  "..XrRRRRRRrX..",
+  "..XRRRRRRRRX..",
+  "..XRRrRRrRRX..",
+  "..XRRRRRRRRX..",
+  "..XrrRRRRrrX..",
+  "..XRRRRRRRRX..",
+  "..XXXXXXXXXX..",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "..XRRRRRRRRX..",
+  "..XrrrrrrrrX..",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "..XRRRRRRRRX..",
+  "..XrrrrrrrrX..",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "...XTTTtttX...",
+  "..XTTTTttttX..",
+  "..XTTTTttttX..",
+  ".XTTTTTtttttX.",
+  ".XTTTTTtttttX.",
+  "XTTTTTTttttttX",
+  "XTTTTTTttttttX",
+  "XttttttttttttX",
+  "XXXXXXXXXXXXXX",
 ];
 
+
+/** One art pixel per viewBox unit. `.` is transparent. */
 export function PixelArt({
   map,
   palette,
   x,
   y,
-  flip = false,
 }: {
   map: string[];
   palette: Record<string, string>;
   x: number;
   y: number;
-  flip?: boolean;
 }) {
-  const width = map[0].length * PX;
   return (
-    <g transform={`translate(${x} ${y})${flip ? ` scale(-1 1) translate(${-width} 0)` : ""}`}>
+    <g transform={`translate(${x} ${y})`}>
       {map.flatMap((row, rowIndex) =>
         [...row].map((char, colIndex) => {
           const fill = palette[char];
@@ -119,10 +183,10 @@ export function PixelArt({
           return (
             <rect
               key={`${rowIndex}-${colIndex}`}
-              x={colIndex * PX}
-              y={rowIndex * PX}
-              width={PX}
-              height={PX}
+              x={colIndex}
+              y={rowIndex}
+              width={1}
+              height={1}
               fill={fill}
             />
           );
@@ -131,6 +195,7 @@ export function PixelArt({
     </g>
   );
 }
+
 
 export function Dojo({
   mood,
@@ -152,6 +217,7 @@ export function Dojo({
 }) {
   const quiet = mood === "quiet";
   const palette = { ...FIXED, ...resolvePalette(avatar, rankId) };
+  const lit = combo >= 3;
 
   return (
     <div
@@ -163,7 +229,7 @@ export function Dojo({
       data-testid="dojo"
     >
       <svg
-        viewBox="0 0 192 64"
+        viewBox="0 0 288 96"
         preserveAspectRatio="xMidYMax meet"
         shapeRendering="crispEdges"
         className={`h-full w-full transition-opacity duration-300 ${
@@ -172,68 +238,83 @@ export function Dojo({
         aria-hidden
       >
         {/* Back wall and floor. Hard edges only — no gradients. */}
-        <rect x="0" y="0" width="192" height="52" fill="var(--color-hall-wall)" />
-        <rect x="0" y="30" width="192" height="1" fill="var(--color-hall-rail)" />
-        <rect x="0" y="52" width="192" height="2" fill="var(--color-ink-line)" />
-        <rect x="0" y="54" width="192" height="10" fill="var(--color-hall-floor)" />
+        <rect x="0" y="0" width="288" height="78" fill="var(--color-hall-wall)" />
+        <rect x="0" y="12" width="288" height="1" fill="var(--color-hall-rail)" />
+        <rect x="0" y="78" width="288" height="2" fill="var(--color-ink-line)" />
+        <rect x="0" y="80" width="288" height="16" fill="var(--color-hall-floor)" />
+
+        {/*
+          Two shoji bays, set wide of the action. An earlier pass ruled the
+          whole wall at even intervals and one of the lines ran straight
+          through the ronin's chest, which is the sort of thing that reads as
+          a rendering fault rather than as architecture.
+        */}
+        {[16, 226].map((x) => (
+          <g key={x}>
+            <rect x={x} y="16" width="46" height="58" fill="var(--color-hall-banner)" />
+            <rect x={x} y="16" width="46" height="1" fill="var(--color-hall-rail)" />
+            <rect x={x + 23} y="16" width="1" height="58" fill="var(--color-hall-rail)" />
+            <rect x={x} y="44" width="46" height="1" fill="var(--color-hall-rail)" />
+          </g>
+        ))}
+
         {/* Floor boards, so the ground reads as a surface rather than a band. */}
-        {[12, 46, 80, 114, 148, 182].map((x) => (
-          <rect key={x} x={x} y="54" width="1" height="10" fill="var(--color-hall-wall)" />
+        {[18, 66, 114, 162, 210, 258].map((x) => (
+          <rect key={x} x={x} y="80" width="1" height="16" fill="var(--color-hall-wall)" />
         ))}
 
         {/* Wall banner, hung from the ceiling. */}
-        <rect x="20" y="0" width="12" height="2" fill="var(--color-hall-rod)" />
-        <rect x="21" y="2" width="10" height="30" fill="var(--color-hall-banner)" />
-        <rect x="24" y="7" width="4" height="2" fill="var(--color-blood)" />
-        <rect x="24" y="12" width="4" height="2" fill="var(--color-blood)" />
-        <rect x="24" y="17" width="4" height="5" fill="var(--color-blood)" />
-        <rect x="21" y="32" width="10" height="1" fill="var(--color-hall-rod)" />
+        <rect x="31" y="20" width="16" height="2" fill="var(--color-hall-rod)" />
+        <rect x="33" y="22" width="12" height="40" fill="var(--color-hall-wall)" />
+        <rect x="37" y="29" width="5" height="3" fill="var(--color-blood)" />
+        <rect x="37" y="36" width="5" height="3" fill="var(--color-blood)" />
+        <rect x="37" y="43" width="5" height="7" fill="var(--color-blood)" />
+        <rect x="33" y="62" width="12" height="1" fill="var(--color-hall-rod)" />
 
         {/* Paper lantern on its cord. It warms as the combo builds. */}
-        <rect x="166" y="0" width="1" height="10" fill="var(--color-ink-line)" />
+        <rect x="249" y="13" width="1" height="12" fill="var(--color-ink-line)" />
         <rect
-          x="162"
-          y="10"
-          width="9"
-          height="11"
-          fill={combo >= 3 ? "var(--color-hall-lamp-case-lit)" : "var(--color-hall-lamp-case-dim)"}
+          x="243"
+          y="25"
+          width="13"
+          height="16"
+          fill={lit ? "var(--color-hall-lamp-case-lit)" : "var(--color-hall-lamp-case-dim)"}
         />
         <rect
-          x="164"
-          y="13"
-          width="5"
-          height="6"
-          fill={combo >= 3 ? "var(--color-hall-lamp-lit)" : "var(--color-hall-lamp-dim)"}
+          x="246"
+          y="29"
+          width="7"
+          height="9"
+          fill={lit ? "var(--color-hall-lamp-lit)" : "var(--color-hall-lamp-dim)"}
         />
-        <rect x="164" y="21" width="5" height="1" fill="var(--color-ink-line)" />
+        <rect x="246" y="41" width="7" height="1" fill="var(--color-ink-line)" />
 
         {/*
-          The ronin. The whole figure plus the blade it holds sit in one group
-          so a strike drives them forward together — animating the blade alone
-          read as a sword swinging by itself, with the swordsman inert.
+          The ronin. Feet land on the floor line at y=78.
 
-          Feet land on the floor line at y=52.
+          The blade is drawn only while a strike is landing, so the resting
+          pose keeps the sword sheathed at the hip where the sprite carries it.
+          A drawn katana held out horizontally from a hanging hand looked wrong;
+          a blade that appears for the length of the cut reads as the draw
+          itself, which is what a ronin with one sword would actually do.
         */}
         <g
           className={
             mood === "strike" ? "anim-lunge" : mood === "miss" ? "anim-flinch" : ""
           }
         >
-          <PixelArt map={RONIN_LOWER} palette={palette} x={50} y={40} />
+          <PixelArt map={RONIN_LOWER} palette={palette} x={104} y={59} />
           <g className="anim-breathe">
-            <PixelArt map={RONIN_UPPER} palette={palette} x={50} y={8} />
+            <PixelArt map={RONIN_UPPER} palette={palette} x={104} y={18} />
           </g>
 
-          {/* The blade, held at the right hand (x=80, y=36) and swinging through
-              it on a landed strike. */}
-          <g
-            className={mood === "strike" ? "anim-slash" : ""}
-            style={{ transformOrigin: "80px 36px" }}
-          >
-            <rect x="76" y="35" width="6" height="2" fill="var(--color-timber)" />
-            <rect x="82" y="35" width="26" height="2" fill="var(--color-steel)" />
-            <rect x="82" y="37" width="26" height="1" fill="var(--color-steel-shadow)" />
-          </g>
+          {mood === "strike" && (
+            <g className="anim-slash" style={{ transformOrigin: "132px 54px" }}>
+              <rect x="128" y="52" width="9" height="4" fill="var(--color-timber)" />
+              <rect x="137" y="52" width="34" height="3" fill="var(--color-steel)" />
+              <rect x="137" y="55" width="34" height="1" fill="var(--color-steel-shadow)" />
+            </g>
+          )}
         </g>
 
         {/* The post takes the hit, so it is what recoils. */}
@@ -242,33 +323,31 @@ export function Dojo({
             mood === "strike" ? "anim-recoil" : mood === "miss" ? "anim-miss" : ""
           }
         >
-          <PixelArt map={POST} palette={palette} x={116} y={18} />
+          <PixelArt map={POST} palette={palette} x={166} y={39} />
         </g>
 
         {/* The contact arc, drawn only at the moment of the hit. */}
         {mood === "strike" && (
           <g className="anim-arc">
-            <rect x="112" y="20" width="2" height="30" fill="var(--color-paper)" />
-            <rect x="109" y="25" width="2" height="20" fill="var(--color-jade)" />
+            <rect x="164" y="36" width="2" height="42" fill="var(--color-paper)" />
+            <rect x="160" y="42" width="2" height="30" fill="var(--color-jade)" />
           </g>
         )}
 
         {/*
-          The damage number, at the thing taking the damage.
-
-          It used to sit at the top-right of the question card, roughly 250px
-          from the post it was rewarding a hit on — the reward for a strike,
-          nowhere near the strike. Like the combo below it, it lives in the
+          The damage number, at the thing taking the damage. It used to sit at
+          the top-right of the question card, roughly 250px from the post it
+          was rewarding a hit on. Like the combo below it, it lives in the
           scene's own coordinates so it cannot drift away from the art.
         */}
         {award && !quiet && (
           <g key={award.seq} className="anim-hit-scene">
             <text
-              x="126"
-              y="16"
+              x="173"
+              y="26"
               textAnchor="middle"
               fill="var(--color-jade)"
-              fontSize="11"
+              fontSize="15"
               fontFamily="ui-monospace, monospace"
             >
               +{award.xp}
@@ -281,21 +360,21 @@ export function Dojo({
         {combo >= 3 && !quiet && (
           <g>
             <text
-              x="188"
-              y="48"
+              x="282"
+              y="68"
               textAnchor="end"
               fill="var(--color-gold)"
-              fontSize="13"
+              fontSize="18"
               fontFamily="ui-monospace, monospace"
             >
               {combo}
             </text>
             <text
-              x="188"
-              y="56"
+              x="282"
+              y="76"
               textAnchor="end"
               fill="var(--color-hall-lamp-case-dim)"
-              fontSize="4.5"
+              fontSize="6"
               letterSpacing="1"
               fontFamily="ui-monospace, monospace"
             >
@@ -304,7 +383,6 @@ export function Dojo({
           </g>
         )}
       </svg>
-
     </div>
   );
 }

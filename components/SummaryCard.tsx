@@ -58,7 +58,7 @@ export function SummaryCard({
           combo={bestStreak}
           avatar={avatar}
           rankId={rankId}
-          className="h-24 shrink-0"
+          className="h-32 shrink-0"
         />
 
         <div className="flex items-end justify-between gap-4">

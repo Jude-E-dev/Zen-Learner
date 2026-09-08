@@ -23,7 +23,7 @@ const sample: Summary = {
   rankName: "Ronin",
   pauses: 2,
   unstuck: 2,
-  avatar: { hat: "lacquer", robe: "moss", obi: "jade" },
+  avatar: { hat: "lacquer", robe: "moss", obi: "jade", hakama: "rust" },
 };
 
 describe("permalink round trip", () => {
@@ -87,7 +87,7 @@ describe("permalink decode — hostile and broken input", () => {
   });
 
   it("returns null when a required field is missing", () => {
-    const good = { v: 1, n: 1, a: 1, c: 1, x: 1, s: 1, t: 1, r: "bushi", p: 0, u: 0, av: ["straw", "indigo", "blood"] };
+    const good = { v: 1, n: 1, a: 1, c: 1, x: 1, s: 1, t: 1, r: "bushi", p: 0, u: 0, av: ["straw", "indigo", "blood", "olive"] };
     // Sanity: the untouched blob decodes, so the null below is the missing field.
     expect(decodeSummary(b64url(good))).not.toBeNull();
     const { x: _dropped, ...missing } = good;
@@ -96,13 +96,13 @@ describe("permalink decode — hostile and broken input", () => {
 
   it("returns null for an unknown rank id", () => {
     expect(
-      decodeSummary(b64url({ v: 1, n: 1, a: 1, c: 1, x: 1, s: 1, t: 1, r: "shogun", p: 0, u: 0, av: ["straw", "indigo", "blood"] })),
+      decodeSummary(b64url({ v: 1, n: 1, a: 1, c: 1, x: 1, s: 1, t: 1, r: "shogun", p: 0, u: 0, av: ["straw", "indigo", "blood", "olive"] })),
     ).toBeNull();
   });
 
   it("returns null for an out-of-range tier", () => {
     expect(
-      decodeSummary(b64url({ v: 1, n: 1, a: 1, c: 1, x: 1, s: 1, t: 9, r: "bushi", p: 0, u: 0, av: ["straw", "indigo", "blood"] })),
+      decodeSummary(b64url({ v: 1, n: 1, a: 1, c: 1, x: 1, s: 1, t: 9, r: "bushi", p: 0, u: 0, av: ["straw", "indigo", "blood", "olive"] })),
     ).toBeNull();
   });
 
@@ -120,7 +120,7 @@ describe("permalink decode — implausible but well-formed values", () => {
   const encode = (over: Record<string, unknown>) =>
     b64url({
       v: 1, n: 1, a: 10, c: 5, x: 100, s: 3, t: 2, r: "bushi", p: 0, u: 0,
-      av: ["straw", "indigo", "blood"],
+      av: ["straw", "indigo", "blood", "olive"],
       ...over,
     });
 
@@ -140,8 +140,8 @@ describe("permalink decode — implausible but well-formed values", () => {
   });
 
   it("falls back to the default kit for avatar ids it does not know", () => {
-    const summary = decodeSummary(encode({ av: ["sombrero", "indigo", "blood"] }));
-    expect(summary?.avatar).toEqual({ hat: "straw", robe: "indigo", obi: "blood" });
+    const summary = decodeSummary(encode({ av: ["sombrero", "indigo", "blood", "olive"] }));
+    expect(summary?.avatar).toEqual({ hat: "straw", robe: "indigo", obi: "blood", hakama: "olive" });
   });
 
   it("resolves the rank name from the id rather than trusting the link", () => {

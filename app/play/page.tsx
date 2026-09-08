@@ -351,7 +351,7 @@ export default function PlayPage() {
               combo={0}
               avatar={profile.avatar}
               rankId={rank.current.id}
-              className="h-24 shrink-0"
+              className="h-28 shrink-0"
             />
             <div className="min-h-0 grow overflow-y-auto">
               <ArmouryPanel
@@ -370,7 +370,7 @@ export default function PlayPage() {
               combo={0}
               avatar={profile.avatar}
               rankId={rank.current.id}
-              className="h-16 shrink-0"
+              className="h-20 shrink-0"
             />
             <div className="min-h-0 grow overflow-y-auto">
               <PausePanel state={state} />

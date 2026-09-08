@@ -16,7 +16,7 @@ import { RANKS } from "./ranks";
  */
 
 /** The slots a learner can change. Everything else about the sprite is fixed. */
-export type AvatarSlot = "hat" | "robe" | "obi";
+export type AvatarSlot = "hat" | "robe" | "obi" | "hakama";
 
 export interface AvatarOption {
   id: string;
@@ -34,12 +34,11 @@ export interface AvatarOption {
  * this scale, and the post is scenery rather than kit.
  */
 export const BASE_PALETTE: Record<string, string> = {
-  f: "#c9a88a", // face
-  e: "#12151d", // the eye-line under the brim
-  g: "#c9a88a", // hands
-  S: "#d9c88a", // straw binding on the post
-  P: "#7a5a3a", // post timber
-  R: "#cbb27a", // rope
+  f: "#d9a882", // skin, lit
+  e: "#9c6f52", // skin, shadowed under the brim
+  S: "#8a5a3a", // scabbard and belt leather
+  s: "#52341f", // leather, shaded
+  w: "#b8563f", // the wraps binding the shins
 };
 
 export const AVATAR_OPTIONS: Record<AvatarSlot, AvatarOption[]> = {
@@ -48,36 +47,36 @@ export const AVATAR_OPTIONS: Record<AvatarSlot, AvatarOption[]> = {
       id: "straw",
       name: "Straw",
       unlockedBy: "ashigaru",
-      swatch: "#d9c88a",
-      colors: { K: "#d9c88a", k: "#b0a06a" },
+      swatch: "#e8d39a",
+      colors: { K: "#e8d39a", k: "#c2a768", j: "#8a7442" },
     },
     {
       id: "ash",
       name: "Ash",
       unlockedBy: "bushi",
-      swatch: "#9aa0a8",
-      colors: { K: "#9aa0a8", k: "#6f757d" },
+      swatch: "#c9ccd1",
+      colors: { K: "#c9ccd1", k: "#9aa0a8", j: "#6b7079" },
     },
     {
       id: "lacquer",
       name: "Lacquer",
       unlockedBy: "ronin",
-      swatch: "#2f3340",
-      colors: { K: "#2f3340", k: "#1b1e27" },
+      swatch: "#4a4f5e",
+      colors: { K: "#4a4f5e", k: "#333743", j: "#1f2230" },
     },
     {
       id: "crimson",
       name: "Crimson",
       unlockedBy: "samurai",
-      swatch: "#b03a3f",
-      colors: { K: "#b03a3f", k: "#7d272b" },
+      swatch: "#c25055",
+      colors: { K: "#c25055", k: "#94383d", j: "#5f2327" },
     },
     {
       id: "gilt",
       name: "Gilt",
       unlockedBy: "kensei",
-      swatch: "#e0b64a",
-      colors: { K: "#e0b64a", k: "#a8842f" },
+      swatch: "#f0c65c",
+      colors: { K: "#f0c65c", k: "#c09a3c", j: "#836726" },
     },
   ],
   robe: [
@@ -85,36 +84,36 @@ export const AVATAR_OPTIONS: Record<AvatarSlot, AvatarOption[]> = {
       id: "indigo",
       name: "Indigo",
       unlockedBy: "ashigaru",
-      swatch: "#3b4a6b",
-      colors: { H: "#3b4a6b", h: "#2a3550", A: "#31405e" },
+      swatch: "#4a5c74",
+      colors: { H: "#4a5c74", h: "#34435a", g: "#222c40" },
     },
     {
       id: "slate",
       name: "Slate",
       unlockedBy: "bushi",
-      swatch: "#444c58",
-      colors: { H: "#444c58", h: "#2f353e", A: "#3a424d" },
+      swatch: "#5c6470",
+      colors: { H: "#5c6470", h: "#434a56", g: "#2c313b" },
     },
     {
       id: "moss",
       name: "Moss",
       unlockedBy: "ronin",
-      swatch: "#3d5442",
-      colors: { H: "#3d5442", h: "#2a3b2e", A: "#34483a" },
+      swatch: "#4f6b52",
+      colors: { H: "#4f6b52", h: "#39503c", g: "#243626" },
     },
     {
       id: "plum",
       name: "Plum",
       unlockedBy: "samurai",
-      swatch: "#4c3550",
-      colors: { H: "#4c3550", h: "#35243a", A: "#422e46" },
+      swatch: "#63496b",
+      colors: { H: "#63496b", h: "#493352", g: "#2e1f36" },
     },
     {
       id: "bone",
       name: "Bone",
       unlockedBy: "kensei",
-      swatch: "#8d8676",
-      colors: { H: "#8d8676", h: "#655f53", A: "#7b7466" },
+      swatch: "#a89e8a",
+      colors: { H: "#a89e8a", h: "#807766", g: "#554e42" },
     },
   ],
   obi: [
@@ -122,46 +121,83 @@ export const AVATAR_OPTIONS: Record<AvatarSlot, AvatarOption[]> = {
       id: "blood",
       name: "Blood",
       unlockedBy: "ashigaru",
-      swatch: "#e5484d",
-      colors: { O: "#e5484d" },
+      swatch: "#a04a34",
+      colors: { O: "#a04a34", o: "#6b2f22" },
     },
     {
       id: "gold",
       name: "Gold",
       unlockedBy: "bushi",
-      swatch: "#f5b544",
-      colors: { O: "#f5b544" },
+      swatch: "#d09a3c",
+      colors: { O: "#d09a3c", o: "#8a6222" },
     },
     {
       id: "jade",
       name: "Jade",
       unlockedBy: "ronin",
-      swatch: "#4ade80",
-      colors: { O: "#4ade80" },
+      swatch: "#3f8f5c",
+      colors: { O: "#3f8f5c", o: "#25603a" },
     },
     {
       id: "ink",
       name: "Ink",
       unlockedBy: "samurai",
-      swatch: "#1d2230",
-      colors: { O: "#1d2230" },
+      swatch: "#2f3646",
+      colors: { O: "#2f3646", o: "#1b2030" },
     },
     {
       id: "paper",
       name: "Paper",
       unlockedBy: "kensei",
-      swatch: "#e8e4d9",
-      colors: { O: "#e8e4d9" },
+      swatch: "#d8d2c2",
+      colors: { O: "#d8d2c2", o: "#9d9684" },
+    },
+  ],
+  hakama: [
+    {
+      id: "olive",
+      name: "Olive",
+      unlockedBy: "ashigaru",
+      swatch: "#6d7a68",
+      colors: { P: "#6d7a68", p: "#4a5449" },
+    },
+    {
+      id: "charcoal",
+      name: "Charcoal",
+      unlockedBy: "bushi",
+      swatch: "#4d525c",
+      colors: { P: "#4d525c", p: "#33373f" },
+    },
+    {
+      id: "rust",
+      name: "Rust",
+      unlockedBy: "ronin",
+      swatch: "#8a5a41",
+      colors: { P: "#8a5a41", p: "#5e3b29" },
+    },
+    {
+      id: "indigo-deep",
+      name: "Deep indigo",
+      unlockedBy: "samurai",
+      swatch: "#3d4a66",
+      colors: { P: "#3d4a66", p: "#28324a" },
+    },
+    {
+      id: "snow",
+      name: "Snow",
+      unlockedBy: "kensei",
+      swatch: "#b9bcb4",
+      colors: { P: "#b9bcb4", p: "#8a8d84" },
     },
   ],
 };
 
-export const AVATAR_SLOTS: AvatarSlot[] = ["hat", "robe", "obi"];
+export const AVATAR_SLOTS: AvatarSlot[] = ["hat", "robe", "obi", "hakama"];
 
 export type AvatarChoice = Record<AvatarSlot, string>;
 
 export function defaultAvatar(): AvatarChoice {
-  return { hat: "straw", robe: "indigo", obi: "blood" };
+  return { hat: "straw", robe: "indigo", obi: "blood", hakama: "olive" };
 }
 
 function rankIndex(rankId: string): number {

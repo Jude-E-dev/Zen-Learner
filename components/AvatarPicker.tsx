@@ -21,8 +21,9 @@ import { RANKS } from "@/lib/game/ranks";
 
 const SLOT_LABELS: Record<AvatarSlot, string> = {
   hat: "HAT",
-  robe: "ROBE",
+  robe: "KIMONO",
   obi: "OBI",
+  hakama: "HAKAMA",
 };
 
 function rankName(id: string): string {
