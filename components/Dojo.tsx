@@ -158,40 +158,40 @@ export function Dojo({
         aria-hidden
       >
         {/* Back wall and floor. Hard edges only — no gradients. */}
-        <rect x="0" y="0" width="192" height="52" fill="#12141b" />
-        <rect x="0" y="30" width="192" height="1" fill="#191d27" />
-        <rect x="0" y="52" width="192" height="2" fill="#2a2f3d" />
-        <rect x="0" y="54" width="192" height="10" fill="#191c25" />
+        <rect x="0" y="0" width="192" height="52" fill="var(--color-hall-wall)" />
+        <rect x="0" y="30" width="192" height="1" fill="var(--color-hall-rail)" />
+        <rect x="0" y="52" width="192" height="2" fill="var(--color-ink-line)" />
+        <rect x="0" y="54" width="192" height="10" fill="var(--color-hall-floor)" />
         {/* Floor boards, so the ground reads as a surface rather than a band. */}
         {[12, 46, 80, 114, 148, 182].map((x) => (
-          <rect key={x} x={x} y="54" width="1" height="10" fill="#12141b" />
+          <rect key={x} x={x} y="54" width="1" height="10" fill="var(--color-hall-wall)" />
         ))}
 
         {/* Wall banner, hung from the ceiling. */}
-        <rect x="20" y="0" width="12" height="2" fill="#3b4a6b" />
-        <rect x="21" y="2" width="10" height="30" fill="#1d2230" />
-        <rect x="24" y="7" width="4" height="2" fill="#e5484d" />
-        <rect x="24" y="12" width="4" height="2" fill="#e5484d" />
-        <rect x="24" y="17" width="4" height="5" fill="#e5484d" />
-        <rect x="21" y="32" width="10" height="1" fill="#3b4a6b" />
+        <rect x="20" y="0" width="12" height="2" fill="var(--color-hall-rod)" />
+        <rect x="21" y="2" width="10" height="30" fill="var(--color-hall-banner)" />
+        <rect x="24" y="7" width="4" height="2" fill="var(--color-blood)" />
+        <rect x="24" y="12" width="4" height="2" fill="var(--color-blood)" />
+        <rect x="24" y="17" width="4" height="5" fill="var(--color-blood)" />
+        <rect x="21" y="32" width="10" height="1" fill="var(--color-hall-rod)" />
 
         {/* Paper lantern on its cord. It warms as the combo builds. */}
-        <rect x="166" y="0" width="1" height="10" fill="#2a2f3d" />
+        <rect x="166" y="0" width="1" height="10" fill="var(--color-ink-line)" />
         <rect
           x="162"
           y="10"
           width="9"
           height="11"
-          fill={combo >= 3 ? "#f5b544" : "#8a6a2a"}
+          fill={combo >= 3 ? "var(--color-hall-lamp-case-lit)" : "var(--color-hall-lamp-case-dim)"}
         />
         <rect
           x="164"
           y="13"
           width="5"
           height="6"
-          fill={combo >= 3 ? "#ffe9b0" : "#c9a45a"}
+          fill={combo >= 3 ? "var(--color-hall-lamp-lit)" : "var(--color-hall-lamp-dim)"}
         />
-        <rect x="164" y="21" width="5" height="1" fill="#2a2f3d" />
+        <rect x="164" y="21" width="5" height="1" fill="var(--color-ink-line)" />
 
         {/*
           The ronin. The whole figure plus the blade it holds sit in one group
@@ -216,9 +216,9 @@ export function Dojo({
             className={mood === "strike" ? "anim-slash" : ""}
             style={{ transformOrigin: "80px 36px" }}
           >
-            <rect x="76" y="35" width="6" height="2" fill="#7a5a3a" />
-            <rect x="82" y="35" width="26" height="2" fill="#cfd6e6" />
-            <rect x="82" y="37" width="26" height="1" fill="#8e97ab" />
+            <rect x="76" y="35" width="6" height="2" fill="var(--color-timber)" />
+            <rect x="82" y="35" width="26" height="2" fill="var(--color-steel)" />
+            <rect x="82" y="37" width="26" height="1" fill="var(--color-steel-shadow)" />
           </g>
         </g>
 
@@ -234,8 +234,8 @@ export function Dojo({
         {/* The contact arc, drawn only at the moment of the hit. */}
         {mood === "strike" && (
           <g className="anim-arc">
-            <rect x="112" y="20" width="2" height="30" fill="#e8e4d9" />
-            <rect x="109" y="25" width="2" height="20" fill="#4ade80" />
+            <rect x="112" y="20" width="2" height="30" fill="var(--color-paper)" />
+            <rect x="109" y="25" width="2" height="20" fill="var(--color-jade)" />
           </g>
         )}
 
@@ -247,7 +247,7 @@ export function Dojo({
               x="188"
               y="48"
               textAnchor="end"
-              fill="#f5b544"
+              fill="var(--color-gold)"
               fontSize="13"
               fontFamily="ui-monospace, monospace"
             >
@@ -257,7 +257,7 @@ export function Dojo({
               x="188"
               y="56"
               textAnchor="end"
-              fill="#8a6a2a"
+              fill="var(--color-hall-lamp-case-dim)"
               fontSize="4.5"
               letterSpacing="1"
               fontFamily="ui-monospace, monospace"
