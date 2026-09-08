@@ -13,13 +13,16 @@ import "./globals.css";
  * self-hosted by next/font so it costs no runtime request and no third-party
  * origin.
  *
+ * Regular only: nothing in the display layer is bold, and shipping the 700
+ * weight meant a second font file preloaded on every page and never used.
+ *
  * Display only. Body copy, the answer input and every piece of maths stay
  * monospace: Silkscreen has no lowercase depth to speak of at small sizes and
  * KaTeX needs metrics it does not have. A pixel font applied to a derivative
  * would be a costume, not a typeface.
  */
 const silkscreen = Silkscreen({
-  weight: ["400", "700"],
+  weight: ["400"],
   subsets: ["latin"],
   display: "swap",
   variable: "--font-bitmap-face",
