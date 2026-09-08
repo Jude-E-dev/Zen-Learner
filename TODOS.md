@@ -57,34 +57,59 @@ answered first.
 
 ---
 
-## Customisable ronin avatar — and the coins that buy it
+## Coins — the half of the avatar feature that is still missing
 
-**What:** An on-screen ronin the learner customises with what they earn. This is one feature
-with the coin economy, not two: the avatar is the sink coins were missing.
+**Status:** The avatar shipped on 2026-09-08 via `/design-review`. This entry is what is left.
 
-**Why:** Coins were cut during the eng review for having nothing to spend them on. A currency
-with no sink is worse than no currency, because it visibly does nothing. The avatar resolves
-that directly, and it also gives the screen a character to sit with during a long grind — a
-practice hall with somebody in it, rather than a form.
+**What shipped:** Three customisable slots (hat, robe, obi), five options each, rendered live on
+the home page and carried into the practice hall. Persisted in IndexedDB as profile version 2.
+Unlocks are gated on **rank**, not coins.
 
-**Pros:** Turns XP and coins into a visible, accumulating identity, which is exactly the kind of
-long-horizon payoff the design doc says pure numbers-going-up cannot supply. It also makes the
-summary card far more shareable: a card with *your* ronin on it is a different object from a
-card with a percentage on it, and sharing is the only distribution channel this thing has.
+**Why rank and not coins:** The design review put the avatar on the home page because the page
+had dead space and nothing to grow into — the figure was needed there regardless. That made the
+avatar available before the currency meant to gate it existed, and a shop with imaginary money
+in it is worse than no shop. Ranks are already earned and already mean something, so the reward
+for holding tier 3 is that you get to look like someone who holds tier 3.
 
-**Cons:** Real art scope. The plan forbids third-party sprite packs with unclear licensing, so
-every piece is CSS/SVG-drawn or commissioned. Cosmetics also need persistence and a shop
-surface, both of which are new UI.
+**What is left:** Coins awarded alongside XP (scaled by tier, reduced after a pause, same as XP),
+and a decision about what they buy now that rank already gates the cosmetics. The obvious
+answer is that the two gate different things: rank unlocks the *palette* tiers, coins buy
+*parts* (blade, kasa shape, banner) that rank does not touch. Settle that before building the
+wallet, or coins end up duplicating a gate that already works.
 
-**Context:** Design it as: coins awarded alongside XP (scaled by tier, reduced after a pause,
-same as XP), a small catalogue of swappable parts (blade, kasa, haori, banner), and equipped
-state persisted next to progress in IndexedDB. Keep it strictly cosmetic — the moment a
-purchase affects difficulty or hints, the mastery gate stops meaning anything. Two open
-questions to settle first: does the avatar appear during the grind or only on the summary card,
-and is it earned by coins alone or gated on rank (which would give ranks a second job).
+**Still true from the original entry:** Keep it strictly cosmetic. The moment a purchase affects
+difficulty or hints, the mastery gate stops meaning anything. No third-party sprite packs; the
+existing parts are all drawn as character-grid pixel maps in `components/Dojo.tsx`, and the
+palette plumbing to extend them is in `lib/game/avatar.ts`.
 
-**Depends on:** Stage 4 (progression + persistence) landing first, since cosmetics need
-somewhere durable to live. Best built after the loop is proven fun, not before.
+**Answered by the shipped work:** The avatar appears during the grind, not only on the summary
+card. The summary card still shows a percentage rather than your ronin — putting it there is a
+small, worthwhile follow-up, since sharing is this project's only distribution channel.
+
+---
+
+## Design polish deferred from the 2026-09-08 review
+
+Four findings graded polish, left undone deliberately. Full report in
+`~/.gstack/projects/Zen_Learner/designs/design-audit-20260908/`.
+
+- **The play route has no `<h1>`.** `Hud`'s `<header>` landmark contains no heading, and the
+  `<h2>`s in `PausePanel` and `NotationHelp` appear with no ancestor `<h1>` on that route. A
+  screen-reader user gets no document title for the screen they spend the whole session on.
+- **No pixel typeface.** `--font-pixel` is a plain system monospace stack. The retro read is
+  carried entirely by `image-rendering: pixelated`, the SVG art and the offset box-shadows. One
+  dropped technique away from looking like generic dark-mode UI. A real bitmap webfont would do
+  more for the 16-bit feel than any other single change.
+- **The hall grows a tall ceiling on narrow viewports.** The scene is 3:1 and anchors to the
+  bottom of its container, so on mobile the room gets a large empty upper half. It now paints
+  the wall colour so it reads as a high ceiling rather than a seam, but the ronin ends up small
+  and low. `preserveAspectRatio="slice"` would fill it and is a no-op at desktop's exact 3:1,
+  but starts cropping the training post below roughly a 1.75:1 container — too fragile to take
+  without art made for it.
+- **Reduced motion is verified by source, not by observation.** All nine animation classes are
+  in the `prefers-reduced-motion` block in `app/globals.css`, but the headless browser used for
+  this review could not emulate the preference, so nobody has actually watched the app with it
+  on.
 
 ---
 
