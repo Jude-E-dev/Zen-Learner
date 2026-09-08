@@ -31,7 +31,7 @@ export function Hud({
   return (
     <header className="pixel-frame bg-ink-soft flex flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3">
       <Stat label="RANK">
-        <span className="text-indigo text-lg">{rank.current.name}</span>
+        <span className="font-bitmap text-indigo text-lg">{rank.current.name}</span>
       </Stat>
 
       <Stat label="TIER">

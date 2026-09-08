@@ -27,7 +27,7 @@ export function ArmouryPanel({
   return (
     <section className="pixel-frame bg-ink-soft shrink-0 p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-gold text-lg tracking-widest">ARMOURY</h2>
+        <h2 className="font-bitmap text-gold text-lg tracking-widest">ARMOURY</h2>
         <p className="text-paper-dim text-label tracking-widest">{note}</p>
       </div>
 

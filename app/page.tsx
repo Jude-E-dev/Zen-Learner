@@ -74,7 +74,7 @@ export default function TopicSelect() {
     <main className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <h1 className="text-jade text-4xl tracking-[0.2em]">ZEN MODE</h1>
+          <h1 className="font-bitmap text-jade text-4xl tracking-[0.2em]">ZEN MODE</h1>
           <p className="text-paper-dim mt-2 text-sm">
             Calculus, one question at a time, for as long as you want.
           </p>
@@ -111,7 +111,7 @@ export default function TopicSelect() {
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
             <div className="min-w-0">
               <div className="flex items-baseline gap-3">
-                <h2 className="text-gold text-2xl tracking-widest">CALCULUS</h2>
+                <h2 className="font-bitmap text-gold text-2xl tracking-widest">CALCULUS</h2>
                 <span className="text-paper-dim text-label tracking-widest">
                   {POOL.length} QUESTIONS
                 </span>

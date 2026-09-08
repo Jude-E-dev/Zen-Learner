@@ -41,7 +41,7 @@ export function SummaryCard({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-jade text-label tracking-[0.3em]">ZEN MODE</p>
+            <p className="font-bitmap text-jade text-label tracking-[0.3em]">ZEN MODE</p>
             <p className="text-paper-dim mt-1 text-label tracking-[0.2em]">
               CALCULUS · SESSION {sessionNumber}
             </p>
@@ -64,9 +64,10 @@ export function SummaryCard({
         <div className="flex items-end justify-between gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-paper-dim text-label tracking-widest">ACCURACY</span>
-            <span className="text-gold text-6xl leading-none tabular-nums">
+            <span className="font-bitmap text-gold text-6xl leading-none tabular-nums">
               {accuracy}
-              <span className="text-2xl">%</span>
+              {/* Monospace: Silkscreen's percent sign sits low against its own digits. */}
+              <span className="font-pixel text-2xl">%</span>
             </span>
             <span className="text-paper-dim text-xs">
               {correct} of {answered} answered

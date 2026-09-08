@@ -42,6 +42,14 @@
   --font-pixel: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 
   /*
+   * The display face, loaded in app/layout.tsx. Headings, labels and the big
+   * numbers only — see the note there for why maths and body copy stay
+   * monospace. Falls back to the monospace stack if the face fails to load,
+   * which changes the texture but never the layout.
+   */
+  --font-bitmap: var(--font-bitmap-face), ui-monospace, Menlo, monospace;
+
+  /*
    * The label size. Every stat caption, gate label, tier tag and hint line in
    * the app is this size, and it was written as the arbitrary value text-[10px]
    * in 21 places across 8 files — the one spot where an otherwise systematic

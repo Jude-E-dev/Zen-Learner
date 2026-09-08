@@ -33,6 +33,11 @@ function SharedSummary() {
 
   return (
     <Frame>
+      <h1 className="sr-only">
+        A Zen Mode session shared with you — session {summary.sessionNumber},{" "}
+        {summary.accuracy}% accuracy at rank {summary.rankName}
+      </h1>
+
       <SummaryCard
         summary={summary}
         actions={
@@ -57,9 +62,9 @@ function BrokenLink() {
   return (
     <Frame>
       <div className="pixel-frame bg-ink-soft flex w-full max-w-[420px] flex-col gap-4 p-7">
-        <p className="text-jade text-label tracking-[0.3em]">ZEN MODE</p>
+        <p className="font-bitmap text-jade text-label tracking-[0.3em]">ZEN MODE</p>
 
-        <h1 className="text-gold text-2xl leading-tight tracking-widest">
+        <h1 className="font-bitmap text-gold text-2xl leading-tight tracking-widest">
           This summary link is broken
         </h1>
 

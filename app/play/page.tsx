@@ -296,6 +296,16 @@ export default function PlayPage() {
       className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 px-5 py-5"
       onKeyDown={handleKeyDown}
     >
+      {/*
+        The screen a learner spends the whole session on had no heading at all,
+        so assistive tech announced the route with no name. It is visually
+        hidden rather than drawn, because the HUD already says all of this to
+        anyone who can see it and a second title would be chrome.
+      */}
+      <h1 className="sr-only">
+        Zen Mode practice hall — tier {q.tier}, rank {rank.current.name}
+      </h1>
+
       <Banner message={banner} />
 
       <Hud state={state} rank={rank} />
