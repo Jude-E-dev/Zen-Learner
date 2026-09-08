@@ -1,5 +1,6 @@
 import type { GameEvent } from "../game/events";
 import { emptyMastery, type MasteryStats } from "../game/ranks";
+import { defaultAvatar, normalizeAvatar, type AvatarChoice } from "../game/avatar";
 
 /**
  * Persistence behind an interface.
@@ -11,7 +12,7 @@ import { emptyMastery, type MasteryStats } from "../game/ranks";
  * modes and the app has to stay playable there.
  */
 
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2;
 
 export interface Profile {
   version: number;
@@ -22,6 +23,8 @@ export interface Profile {
   /** Completed sessions, for the session-1 vs session-5 comparison. */
   sessions: number;
   lastSessionAt: number | null;
+  /** How the learner has dressed their ronin. Added in version 2. */
+  avatar: AvatarChoice;
 }
 
 export function emptyProfile(): Profile {
@@ -32,6 +35,7 @@ export function emptyProfile(): Profile {
     mastery: emptyMastery(),
     sessions: 0,
     lastSessionAt: null,
+    avatar: defaultAvatar(),
   };
 }
 
@@ -77,19 +81,54 @@ export function memoryStore(): Store {
   };
 }
 
-function migrate(raw: unknown): Profile {
+/**
+ * Stored mastery is the one field the app will crash on if it is the wrong
+ * shape: rankFor reads stats.perTier and every screen derives a rank on
+ * mount. While an unrecognised version reset the whole profile this was
+ * guarded by accident; now that version 1 profiles are carried forward, the
+ * shape has to be checked on the way in.
+ *
+ * Per-tier records are rebuilt field by field rather than trusted wholesale,
+ * so a half-written record cannot turn into NaN totals downstream.
+ */
+function migrateMastery(raw: unknown): MasteryStats {
+  if (!raw || typeof raw !== "object") return emptyMastery();
+  const perTier = (raw as Partial<MasteryStats>).perTier;
+  if (!perTier || typeof perTier !== "object") return emptyMastery();
+
+  const clean: Record<number, { answered: number; correct: number }> = {};
+  for (const [tier, record] of Object.entries(perTier)) {
+    const key = Number(tier);
+    if (!Number.isFinite(key)) continue;
+    if (!record || typeof record !== "object") continue;
+    const { answered, correct } = record as Partial<{ answered: number; correct: number }>;
+    if (!Number.isFinite(answered) || !Number.isFinite(correct)) continue;
+    clean[key] = { answered: answered as number, correct: correct as number };
+  }
+
+  return { perTier: clean };
+}
+
+/**
+ * Version 2 added the avatar. Every other field is unchanged, so a version 1
+ * profile upgrades by filling in a default rather than starting over — a
+ * learner who has ground their way to Samurai must not lose it to a cosmetic
+ * feature. Only a version from the future is still treated as unreadable,
+ * because that shape genuinely is unknown to this build.
+ */
+export function migrate(raw: unknown): Profile {
   if (!raw || typeof raw !== "object") return emptyProfile();
   const candidate = raw as Partial<Profile>;
-  // Only one version exists so far. An unknown version means data written by a
-  // newer build; starting clean beats crashing on a shape we can't read.
-  if (candidate.version !== PROFILE_VERSION) return emptyProfile();
+  if (typeof candidate.version !== "number") return emptyProfile();
+  if (candidate.version > PROFILE_VERSION) return emptyProfile();
   return {
     version: PROFILE_VERSION,
     totalXp: candidate.totalXp ?? 0,
     bestStreak: candidate.bestStreak ?? 0,
-    mastery: candidate.mastery ?? emptyMastery(),
+    mastery: migrateMastery(candidate.mastery),
     sessions: candidate.sessions ?? 0,
     lastSessionAt: candidate.lastSessionAt ?? null,
+    avatar: normalizeAvatar(candidate.avatar),
   };
 }
 

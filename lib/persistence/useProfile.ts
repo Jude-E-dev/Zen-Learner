@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionState } from "../game/session";
 import { createStore, emptyProfile, type Profile, type Store } from "./store";
 import { mergeSession } from "./profile";
+import type { AvatarChoice } from "../game/avatar";
 
 /**
  * Loads the durable profile once, then hands back a commit function for the
@@ -49,11 +50,24 @@ export function useProfile() {
     setProfile(merged);
   }, []);
 
+  /**
+   * Saving the avatar reloads the profile first for the same reason
+   * commitSession does: the picker and a finishing session can both be writing,
+   * and the last write must not roll back the other's fields.
+   */
+  const saveAvatar = useCallback(async (avatar: AvatarChoice) => {
+    setProfile((current) => ({ ...current, avatar }));
+    const store = storeRef.current;
+    if (!store) return;
+    const before = await store.loadProfile();
+    await store.saveProfile({ ...before, avatar });
+  }, []);
+
   const exportEvents = useCallback(async () => {
     const store = storeRef.current;
     if (!store) return [];
     return store.readEvents();
   }, []);
 
-  return { profile, ready, durable, commitSession, exportEvents };
+  return { profile, ready, durable, commitSession, saveAvatar, exportEvents };
 }

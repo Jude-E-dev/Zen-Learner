@@ -13,25 +13,23 @@
  * ambiguity (constraint #10), and editing the art means editing a string.
  */
 
+import {
+  defaultAvatar,
+  resolvePalette,
+  type AvatarChoice,
+} from "@/lib/game/avatar";
+
 export type DojoMood = "idle" | "strike" | "miss" | "quiet";
 
 const PX = 2;
 
-/** `.` is transparent; every other character indexes into the palette. */
-const PALETTE: Record<string, string> = {
-  K: "#d9c88a", // straw hat, lit
-  k: "#b0a06a", // straw hat, brim shadow
-  f: "#c9a88a", // face
-  e: "#12151d", // the eye-line under the brim
-  H: "#3b4a6b", // haori
-  h: "#2a3550", // haori shadow
-  A: "#31405e", // sleeve
-  g: "#c9a88a", // hands
-  O: "#e5484d", // obi
+/**
+ * Colours the learner cannot change. Everything they can — hat, robe, obi —
+ * arrives through the resolved palette in lib/game/avatar.ts, so the sprite is
+ * no longer single-skin.
+ */
+const FIXED: Record<string, string> = {
   L: "#23283a", // hakama and legs
-  S: "#d9c88a", // straw binding on the post
-  P: "#7a5a3a", // post timber
-  R: "#cbb27a", // rope
 };
 
 /**
@@ -43,7 +41,7 @@ const PALETTE: Record<string, string> = {
  * Split at the hips so the idle breath can lift the torso while the feet stay
  * planted. Lifting the whole figure reads as hopping, not breathing.
  */
-const RONIN_UPPER = [
+export const RONIN_UPPER = [
   ".......KKKKKK.......",
   ".....KKKKKKKKKK.....",
   "...KKKKKKKKKKKKKK...",
@@ -69,7 +67,7 @@ const RONIN_UPPER = [
  * that row is hidden; when the breath lifts the torso it is what fills the
  * gap, instead of a slit of back wall opening across the hips.
  */
-const RONIN_LOWER = [
+export const RONIN_LOWER = [
   ".....LLLL..LLLL.....",
   ".....LLLL..LLLL.....",
   ".....LLLL..LLLL.....",
@@ -98,13 +96,15 @@ const POST = [
   ".PPPPPPPP.",
 ];
 
-function PixelArt({
+export function PixelArt({
   map,
+  palette,
   x,
   y,
   flip = false,
 }: {
   map: string[];
+  palette: Record<string, string>;
   x: number;
   y: number;
   flip?: boolean;
@@ -114,7 +114,7 @@ function PixelArt({
     <g transform={`translate(${x} ${y})${flip ? ` scale(-1 1) translate(${-width} 0)` : ""}`}>
       {map.flatMap((row, rowIndex) =>
         [...row].map((char, colIndex) => {
-          const fill = PALETTE[char];
+          const fill = palette[char];
           if (!fill) return null;
           return (
             <rect
@@ -135,13 +135,20 @@ function PixelArt({
 export function Dojo({
   mood,
   combo,
+  avatar = defaultAvatar(),
+  rankId = "kensei",
   className = "grow",
 }: {
   mood: DojoMood;
   combo: number;
+  /** How the learner has dressed the ronin. Defaults to the starting kit. */
+  avatar?: AvatarChoice;
+  /** Which rank the learner holds, so locked options fall back rather than render holes. */
+  rankId?: string;
   className?: string;
 }) {
   const quiet = mood === "quiet";
+  const palette = { ...FIXED, ...resolvePalette(avatar, rankId) };
 
   return (
     <div
@@ -205,9 +212,9 @@ export function Dojo({
             mood === "strike" ? "anim-lunge" : mood === "miss" ? "anim-flinch" : ""
           }
         >
-          <PixelArt map={RONIN_LOWER} x={50} y={40} />
+          <PixelArt map={RONIN_LOWER} palette={palette} x={50} y={40} />
           <g className="anim-breathe">
-            <PixelArt map={RONIN_UPPER} x={50} y={8} />
+            <PixelArt map={RONIN_UPPER} palette={palette} x={50} y={8} />
           </g>
 
           {/* The blade, held at the right hand (x=80, y=36) and swinging through
@@ -228,7 +235,7 @@ export function Dojo({
             mood === "strike" ? "anim-recoil" : mood === "miss" ? "anim-miss" : ""
           }
         >
-          <PixelArt map={POST} x={116} y={18} />
+          <PixelArt map={POST} palette={palette} x={116} y={18} />
         </g>
 
         {/* The contact arc, drawn only at the moment of the hit. */}
