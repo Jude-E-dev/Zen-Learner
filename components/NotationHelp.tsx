@@ -35,7 +35,7 @@ export function NotationHelp({ onDismiss }: { onDismiss: () => void }) {
       <button
         type="button"
         onClick={onDismiss}
-        className="pixel-frame text-paper mt-5 bg-ink px-3 py-1.5 text-xs tracking-widest hover:border-gold"
+        className="focus-ring pixel-frame text-paper mt-5 bg-ink px-3 py-1.5 text-xs tracking-widest hover:border-gold"
       >
         GOT IT
       </button>

@@ -79,7 +79,7 @@ export function SummaryCard({
         type="button"
         onClick={onRestart}
         autoFocus
-        className="pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
+        className="focus-ring pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
       >
         GO AGAIN
       </button>

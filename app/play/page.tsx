@@ -203,7 +203,7 @@ export default function PlayPage() {
           <button
             type="button"
             onClick={() => void exportEvents().then(downloadJsonl)}
-            className="text-paper-dim mx-auto text-label tracking-widest hover:text-paper"
+            className="focus-ring text-paper-dim mx-auto text-label tracking-widest hover:text-paper"
           >
             EXPORT EVENTS (.JSONL)
           </button>
@@ -305,7 +305,7 @@ export default function PlayPage() {
           autoCorrect="off"
           spellCheck={false}
           placeholder={inPause ? "Answer, or Enter alone to go on" : "Your answer"}
-          className="pixel-frame text-paper bg-ink px-4 py-3 text-lg outline-none placeholder:text-paper-dim/60 focus:border-jade-deep"
+          className="focus-ring pixel-frame text-paper bg-ink px-4 py-3 text-lg placeholder:text-paper-dim/60 focus:border-jade-deep"
         />
 
         <div aria-live="polite" className="min-h-[1.5rem] text-sm">

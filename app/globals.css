@@ -77,6 +77,20 @@ body {
   box-shadow: 4px 4px 0 0 var(--color-jade-deep);
 }
 
+/*
+ * One focus treatment for everything you can reach with a keyboard.
+ *
+ * The app announces itself as keyboard-only and then had an authored focus
+ * style on exactly one control — the answer input. Everything else fell back
+ * to the browser's default 1px ring, which against a near-black background is
+ * nearly invisible. :focus-visible rather than :focus so a mouse click does
+ * not leave a ring behind.
+ */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-jade);
+  outline-offset: 2px;
+}
+
 /* The damage number that punches on a correct answer. */
 @keyframes hit-pop {
   0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
