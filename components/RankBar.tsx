@@ -29,8 +29,9 @@ export function RankBar({ rank }: { rank: RankProgress }) {
 
   return (
     <div className="flex flex-col gap-1.5 px-1">
-      <div className="flex items-baseline justify-between text-label tracking-[0.25em]">
-        <span className="text-indigo">{rank.current.name.toUpperCase()}</span>
+      {/* The current rank is the HUD's to state, and it states it larger. This
+          row names only where the bars are going. */}
+      <div className="text-label tracking-[0.25em]">
         <span className="text-paper-dim">
           NEXT: <span className="text-paper">{rank.next.name.toUpperCase()}</span>
         </span>

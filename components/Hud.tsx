@@ -11,6 +11,12 @@ import type { RankProgress } from "@/lib/game/ranks";
  * the promote/demote counters are shown as filled pips rather than hidden in
  * the model. A learner should be able to see "one more and I move up" without
  * being told.
+ *
+ * What this does NOT show is progress toward the next rank. RankBar sits
+ * directly underneath and says the same thing as two filled bars, which is
+ * the better telling of it. This header used to carry a "TO BUSHI 0/5 correct
+ * at T2+ · —/60%" stat as well, so the screen stated the same requirement
+ * twice, eight pixels apart, in two different formats.
  */
 export function Hud({
   state,
@@ -48,29 +54,6 @@ export function Hud({
         <span className="tabular-nums">{accuracy === null ? "—" : `${accuracy}%`}</span>
         <span className="text-paper-dim ml-1 text-label">({answered})</span>
       </Stat>
-
-      {/* What the next rank actually costs, in the terms it is measured in. */}
-      {rank.next && (
-        <Stat label={`TO ${rank.next.name.toUpperCase()}`}>
-          <span className="text-paper-dim text-xs">
-            <span className="text-paper tabular-nums">
-              {Math.min(rank.correct, rank.correctRequired)}/{rank.correctRequired}
-            </span>{" "}
-            correct at T{rank.next.tierFloor}+
-            <span className="text-ink-line mx-1">·</span>
-            <span
-              className={
-                rank.accuracy !== null && rank.accuracy >= rank.accuracyRequired
-                  ? "text-jade tabular-nums"
-                  : "text-paper tabular-nums"
-              }
-            >
-              {rank.accuracy === null ? "—" : `${Math.round(rank.accuracy * 100)}%`}
-            </span>
-            /{Math.round(rank.accuracyRequired * 100)}%
-          </span>
-        </Stat>
-      )}
 
       {/* The gate itself, made visible. */}
       <div className="ml-auto flex items-center gap-6">
