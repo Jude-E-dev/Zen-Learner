@@ -39,7 +39,12 @@ export function AvatarPicker({
   onChange: (next: AvatarChoice) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    /*
+      Side by side once there is width for it. Stacked, three slots plus the
+      DONE button are taller than the space the play screen has left over, so
+      opening the armoury mid-session showed a picker cut off at the second row.
+    */
+    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-x-10">
       {AVATAR_SLOTS.map((slot) => {
         const selected = findOption(slot, choice[slot]);
 

@@ -17,11 +17,14 @@ export function SummaryCard({
   rank,
   sessionNumber,
   onRestart,
+  onExit,
 }: {
   state: SessionState;
   rank: RankProgress;
   sessionNumber: number;
   onRestart: () => void;
+  /** Leave the session behind and return to the hall, where the armoury is. */
+  onExit: () => void;
 }) {
   const { answered, correct, xp, bestStreak, selector, events } = state;
   const accuracy = answered === 0 ? 0 : Math.round((correct / answered) * 100);
@@ -75,14 +78,29 @@ export function SummaryCard({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onRestart}
-        autoFocus
-        className="focus-ring pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
-      >
-        GO AGAIN
-      </button>
+      {/*
+        Two ways out, because for a long time there was one and it led back to
+        where you already were. GO AGAIN restarts in place; the hall is where
+        the armoury lives, and until now nothing on this screen could reach it.
+      */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={onRestart}
+          autoFocus
+          className="focus-ring pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
+        >
+          GO AGAIN
+        </button>
+
+        <button
+          type="button"
+          onClick={onExit}
+          className="focus-ring pixel-frame text-paper-dim bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:border-gold hover:text-paper"
+        >
+          ◂ BACK TO THE HALL
+        </button>
+      </div>
     </div>
   );
 }

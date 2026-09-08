@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import questionData from "@/lib/content/generated.json";
 import type { Question } from "@/lib/content/schema";
 import { Hud } from "@/components/Hud";
@@ -23,6 +24,8 @@ import {
 } from "@/lib/game/session";
 import { rankFor } from "@/lib/game/ranks";
 import { useProfile } from "@/lib/persistence/useProfile";
+import { ArmouryPanel } from "@/components/ArmouryPanel";
+import type { AvatarChoice } from "@/lib/game/avatar";
 import { masteryWithSession, downloadJsonl } from "@/lib/persistence/profile";
 
 const POOL = questionData as unknown as Question[];
@@ -42,13 +45,20 @@ export default function PlayPage() {
   const [state, setState] = useState<SessionState>(() => startSession(POOL));
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { profile, durable, commitSession, exportEvents } = useProfile();
+  const { profile, durable, commitSession, saveAvatar, exportEvents } = useProfile();
   const committed = useRef<SessionState | null>(null);
+  const router = useRouter();
+  /*
+   * The armoury opens over the session rather than replacing it. Changing kit
+   * mid-grind is a cosmetic act, so it must not cost a streak, and the ronin
+   * being right there is what makes the preview worth anything.
+   */
+  const [armoury, setArmoury] = useState(false);
 
   // Focus follows the loop, so typing always lands somewhere useful.
   useEffect(() => {
-    if (state.phase !== "summary") inputRef.current?.focus();
-  }, [state.phase, state.current?.id]);
+    if (state.phase !== "summary" && !armoury) inputRef.current?.focus();
+  }, [state.phase, state.current?.id, armoury]);
 
   // Persist once, when the session actually ends.
   useEffect(() => {
@@ -172,6 +182,18 @@ export default function PlayPage() {
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
+    /*
+     * While the armoury is open it owns both keys: Escape closes it rather
+     * than ending the session, and Enter must not submit an answer the
+     * learner cannot currently see.
+     */
+    if (armoury) {
+      if (event.key === "Escape" || event.key === "Enter") {
+        event.preventDefault();
+        if (event.key === "Escape") setArmoury(false);
+      }
+      return;
+    }
     if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
       if (state.phase === "grinding") {
@@ -198,6 +220,7 @@ export default function PlayPage() {
             setState(startSession(POOL));
             setInput("");
           }}
+          onExit={() => router.push("/")}
         />
         {process.env.NODE_ENV === "development" && (
           <button
@@ -257,7 +280,32 @@ export default function PlayPage() {
           <NotationHelp onDismiss={() => setState(dismissNotationHelp(state))} />
         )}
 
-        {inPause ? (
+        {armoury ? (
+          /*
+            The hall keeps a strip, exactly as it does during a pause. Dressing
+            the ronin with the ronin off-screen would be picking colours blind,
+            and it is the live preview that makes the armoury worth opening
+            here rather than back at the front door.
+          */
+          <>
+            <Dojo
+              mood="idle"
+              combo={0}
+              avatar={profile.avatar}
+              rankId={rank.current.id}
+              className="h-24 shrink-0"
+            />
+            <div className="min-h-0 grow overflow-y-auto">
+              <ArmouryPanel
+                choice={profile.avatar}
+                currentRankId={rank.current.id}
+                onChange={(next: AvatarChoice) => void saveAvatar(next)}
+                onClose={() => setArmoury(false)}
+                note="ESC TO CLOSE · YOUR STREAK IS SAFE"
+              />
+            </div>
+          </>
+        ) : inPause ? (
           <>
             <Dojo
               mood="quiet"
@@ -318,9 +366,24 @@ export default function PlayPage() {
           )}
         </div>
 
-        <p className="text-paper-dim border-t-2 border-ink-line pt-3 text-label tracking-widest">
-          ENTER SUBMIT · SHIFT+ENTER I&apos;M STUCK · ESC END SESSION
-        </p>
+        {/*
+          The way out, and the way to the armoury, on the screen that had
+          neither. The play flow contained no navigation at all: once a session
+          started, the browser's back button was the only exit.
+        */}
+        <div className="border-ink-line flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t-2 pt-3">
+          <p className="text-paper-dim text-label tracking-widest">
+            ENTER SUBMIT · SHIFT+ENTER I&apos;M STUCK · ESC END SESSION
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setArmoury(true)}
+            className="focus-ring text-paper-dim text-label tracking-widest hover:text-gold"
+          >
+            ARMOURY
+          </button>
+        </div>
       </form>
     </main>
   );

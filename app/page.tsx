@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import questionData from "@/lib/content/generated.json";
 import type { Question } from "@/lib/content/schema";
 import { Dojo } from "@/components/Dojo";
-import { AvatarPicker } from "@/components/AvatarPicker";
+import { ArmouryPanel } from "@/components/ArmouryPanel";
 import { useProfile } from "@/lib/persistence/useProfile";
 import { rankFor } from "@/lib/game/ranks";
 import type { AvatarChoice } from "@/lib/game/avatar";
@@ -100,28 +100,12 @@ export default function TopicSelect() {
       />
 
       {armoury ? (
-        <section className="pixel-frame bg-ink-soft shrink-0 p-5">
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-gold text-lg tracking-widest">ARMOURY</h2>
-            <p className="text-paper-dim text-label tracking-widest">
-              RANK UP TO UNLOCK · ESC TO CLOSE
-            </p>
-          </div>
-
-          <AvatarPicker
-            choice={profile.avatar}
-            currentRankId={rank.current.id}
-            onChange={onAvatarChange}
-          />
-
-          <button
-            type="button"
-            onClick={() => setArmoury(false)}
-            className="focus-ring pixel-frame text-paper mt-5 bg-ink px-4 py-2 text-xs tracking-widest hover:border-gold"
-          >
-            DONE
-          </button>
-        </section>
+        <ArmouryPanel
+          choice={profile.avatar}
+          currentRankId={rank.current.id}
+          onChange={onAvatarChange}
+          onClose={() => setArmoury(false)}
+        />
       ) : (
         <section className="pixel-frame bg-ink-soft shrink-0 p-5">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
