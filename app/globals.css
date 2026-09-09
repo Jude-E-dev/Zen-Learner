@@ -18,7 +18,40 @@
   --color-jade-deep: #16643a;
   --color-blood: #e5484d;
   --color-gold: #f5b544;
-  --color-indigo: #6366f1;
+
+  /*
+   * The rank hue.
+   *
+   * Was #6366f1 — Tailwind's stock indigo-500, the one colour in the app from
+   * outside the jade/gold/blood palette, and the only one that failed contrast:
+   * 3.89:1 against ink-soft at 18px, where AA wants 4.5. It carried the rank
+   * name, which is the reward the whole progression exists to hand out, and it
+   * read dimmer than the accuracy figure sitting next to it.
+   *
+   * This is the same hue family lifted until it clears AA (5.6:1), so the rank
+   * still reads as its own colour rather than a third accent.
+   */
+  --color-indigo: #8f9bff;
+
+  /*
+   * Two muted greys, replacing four ad-hoc opacity modifiers.
+   *
+   * `text-paper-dim/70`, `/60` and `opacity-45` were each invented at their
+   * call site and each landed between 3.1:1 and 3.8:1 — every one of them below
+   * AA. Naming the two intents means "dimmer" stops being re-derived per
+   * component, and the readable one is readable everywhere.
+   */
+  --color-paper-mute: #8d8a81; /* 4.9:1 on ink-soft — still text */
+  --color-paper-ghost: #55524b; /* decorative only, never carries meaning */
+
+  /*
+   * The rung numbers in the hint ladder.
+   *
+   * jade-deep is 2.41:1 — fine for the borders it was made for, unreadable as
+   * the 01/02/03 that number the ladder. Those are content: they tell you how
+   * far down the ladder you are.
+   */
+  --color-rung: #2f9b63;
 
   /*
    * The practice hall's own surfaces. These live here rather than as hex

@@ -66,7 +66,7 @@ export function PausePanel({
         <ol className="flex flex-col gap-3">
           {q.workedSolution.map((step, i) => (
             <li key={i} className="flex gap-3">
-              <span className="text-jade-deep shrink-0 tabular-nums">
+              <span className="text-rung shrink-0 tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <div className="flex flex-col gap-1">
@@ -82,8 +82,8 @@ export function PausePanel({
         <div className="flex flex-col gap-4">
           {/* Only rungs already reached, so the ladder can't be skipped ahead. */}
           {q.hints.slice(0, state.hintRung - 1).map((hint, i) => (
-            <div key={i} className="flex gap-3 opacity-45">
-              <span className="text-jade-deep shrink-0 tabular-nums">
+            <div key={i} className="text-paper-mute flex gap-3">
+              <span className="text-rung shrink-0 tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <MathText text={hint} className="leading-relaxed" />
@@ -97,7 +97,7 @@ export function PausePanel({
             reply lands.
           */}
           <div className="flex gap-3">
-            <span className="text-jade-deep shrink-0 tabular-nums">
+            <span className="text-rung shrink-0 tabular-nums">
               {String(state.hintRung).padStart(2, "0")}
             </span>
             {thinking ? (

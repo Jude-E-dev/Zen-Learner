@@ -626,7 +626,7 @@ function Play() {
                 ? "Answer, or Enter alone to go on"
                 : "Your answer"
           }
-          className="focus-ring pixel-frame text-paper bg-ink px-4 py-3 text-lg placeholder:text-paper-dim/60 focus:border-jade-deep disabled:opacity-50"
+          className="focus-ring pixel-frame text-paper bg-ink px-4 py-3 text-lg placeholder:text-paper-mute focus:border-jade-deep disabled:opacity-50"
         />
 
         <div aria-live="polite" className="min-h-[1.5rem] text-sm">

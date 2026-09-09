@@ -136,7 +136,7 @@ export default function TopicSelect() {
                       )}
                     </div>
                     <p className="text-paper-dim mt-1 text-sm">{drill.blurb}</p>
-                    <p className="text-paper-dim/70 mt-1 text-label tracking-wide">
+                    <p className="text-paper-mute mt-1 text-label tracking-wide">
                       {drill.subtopics.join(" · ")}
                     </p>
                   </div>
