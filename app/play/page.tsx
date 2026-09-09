@@ -686,10 +686,21 @@ function Play() {
             ENTER SUBMIT · SHIFT+ENTER I&apos;M STUCK · ESC END SESSION
           </p>
 
+          {/*
+            Framed and padded, matching the same button on the home page.
+
+            It was bare 10px text with no padding: 49x16 on a phone, under the
+            24x24 WCAG minimum and well under the 44px comfort target — and it
+            is the only way off this screen that is not a keyboard shortcut,
+            on the one route where a learner might be on a phone with no
+            keyboard at all. The home page already renders this exact action
+            as `pixel-frame ... px-4 py-2 text-xs`; there was no reason for the
+            play route to render it as a caption.
+          */}
           <button
             type="button"
             onClick={() => setArmoury(true)}
-            className="focus-ring text-paper-dim text-label tracking-widest hover:text-gold"
+            className="focus-ring pixel-frame text-paper-dim bg-ink min-h-11 px-4 py-2 text-xs tracking-widest hover:border-gold hover:text-paper"
           >
             ARMOURY
           </button>
