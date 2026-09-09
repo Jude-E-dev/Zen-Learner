@@ -254,5 +254,42 @@ body {
   }
 }
 
-/* KaTeX inherits the pixel palette rather than its own serif defaults. */
+/*
+ * KaTeX inherits this app's face, not its own serif defaults.
+ *
+ * This rule used to set only `font-size`, and the comment above it described a
+ * rule that was never written. KaTeX ships
+ * `.katex{font:normal 1.21em KaTeX_Main,Times New Roman,serif}` — the `font`
+ * shorthand, which carries a family — so every question prompt, every hint
+ * rung and every worked step rendered in Computer Modern serif inside a
+ * 16-bit pixel app: "Differentiate:" in monospace and `f(x) = (3x+1)^5` in
+ * Times, one sentence, two typefaces, on every calculus question.
+ *
+ * The family has to be re-stated on the children too. KaTeX sets its own
+ * family again on the internal spans that carry the italic and upright
+ * variants, so a family on `.katex` alone still leaves the maths in serif.
+ *
+ * Kept deliberately: KaTeX's own layout classes (spacing, delimiter sizing,
+ * script offsets) are metric-tuned and are not touched here — only the family
+ * changes, so fractions and exponents still stack correctly.
+ */
+.katex,
+.katex .mord,
+.katex .mop,
+.katex .mbin,
+.katex .mrel,
+.katex .mopen,
+.katex .mclose,
+.katex .mpunct,
+.katex .minner {
+  font-family: var(--font-pixel);
+}
+
 .katex { font-size: 1.05em; }
+
+/* Italic is how KaTeX distinguishes a variable from an operator; monospace
+   keeps that, so the slant stays rather than being normalised away. */
+.katex .mathit,
+.katex .mathnormal {
+  font-style: italic;
+}
