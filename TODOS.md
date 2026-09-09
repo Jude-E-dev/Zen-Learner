@@ -37,6 +37,44 @@ and invisible to every correctness test. Do not delete that block.
 - Tier 5 tops out around `41 × 25`. If that stops being a stretch, the ceiling needs
   raising rather than the range widening.
 
+## The sum is not an answer — fixed 2026-09-09
+
+`31 * 20` was scored **correct** for the question `31 × 20`. Every question in
+the mental math drill was answerable by retyping it, so XP, ranks and mastery
+were all reachable without doing any arithmetic at all.
+
+**Why it happened, and why the checker was not wrong.** `checkAnswer` grades by
+numeric behaviour on purpose — that is what lets `3/3` count for `1` and
+`2sin(x)cos(x)` for `sin(2x)` without anyone enumerating forms by hand. `31*20`
+evaluates to 620 and so does `620`. The bug was that a drill whose entire point
+is performing the arithmetic was consuming a checker built to be indifferent to
+how you write it.
+
+**The fix is one flag, not a special case in the grader.** `QuestionSchema`
+gained `requireEvaluated` (defaults false; `lib/content/mental.ts` sets it
+true). When set, `checkAnswer` parses first and demands a plain number —
+optionally signed, optionally parenthesised — before anything is compared.
+Anything with an operator, function or symbol left in it returns
+`unreadable` with `needsEvaluation: true`.
+
+Three things that were deliberate:
+- **It runs before every other path**, including the misconception match. A
+  restated sum that happens to land on a distractor is not that misconception,
+  and scoring it as one would poison the analytics the tutor reads.
+- **The verdict is `unreadable`, not `incorrect`.** Handing the question back is
+  not a wrong answer, it is not an answer. Nothing scores and nothing moves.
+- **It does not count toward the notation help.** `lib/game/session.ts` skips
+  the `consecutiveUnreadable` bump when `needsEvaluation` is set, and the play
+  route says "That's the question, not the answer — work it out and type the
+  number" rather than "I couldn't read that", which would be a lie about input
+  that parsed perfectly.
+
+`lib/content/mental.test.ts` grew a block that retypes all 300 sampled prompts
+in ASCII and requires every one to be refused, plus the other unevaluated routes
+to the right number (`620 + 0`, `621 - 1`, `1240 / 2`) and the forms that must
+still be accepted (`620`, `(620)`, `620.0`). The calculus bank sets the flag
+nowhere, and `check.test.ts`'s "3/3 is still 1" case is what holds that line.
+
 ## Tutor layer (stage 5) — shipped and verified 2026-09-09
 
 The constrained tutor: `/api/tutor`, the leak validator, the daily quota, the eval
@@ -212,15 +250,11 @@ Two of the four are done. Full report in
 - ~~**The ronin was a hand-drawn 20x22 grid.**~~ Done 2026-09-08. Redrawn from
   `Sprites/` at 16 colours on a single 288x96 pixel grid, with a fourth avatar
   slot (hakama) the new sprite made possible.
-- **The hall grows a tall ceiling on narrow viewports.** The scene is 3:1 and
-  anchors to the bottom of its container, so on a phone (roughly 1.4:1) more
-  than half the room is empty wall above the action. It paints the wall colour,
-  so it reads as a high ceiling rather than a seam, and the ronin is
-  width-constrained at that size regardless — about 70px tall on a 375px
-  screen. `preserveAspectRatio="slice"` would fill it and is a no-op at
-  desktop's exact 3:1, but starts cropping the post below roughly 1.75:1. The
-  real fix is a second, narrower composition for phones rather than a different
-  fit rule on the same one.
+- **The hall grows a tall ceiling on narrow viewports.** Partly addressed
+  2026-09-09 by the raster swap above: the band above the scene now carries 19
+  rows of the art's own ceiling before it falls back to flat colour. The rest
+  of the band, and the analysis of why a different fit rule cannot fix it,
+  is in "The 16-bit hall" entry above.
 - **Reduced motion is verified by source, not by observation.** All ten
   animation classes are in the `prefers-reduced-motion` block in
   `app/globals.css`, but the headless browser used for the review could not
@@ -247,3 +281,270 @@ equivalent (`prefers-reduced-motion` does not cover sound, so a first-run defaul
 doing that job).
 
 **Depends on:** The core loop being proven fun (the session-1 vs session-5 measurement).
+
+---
+
+## The strike, from the new attack sheet — shipped 2026-09-09
+
+`RONIN_ATTACK` was a hand-trace. It is now resampled from
+`Sprites/roning_attack.png` by `scripts/sprites/ronin-attack.py`, which prints
+exactly the rows in the file and the draw position to use with them.
+
+**The sheet draws the sword's arc**, which is the real gain: the strike used to
+be a static pose plus two hand-placed rectangles standing in for the flash of
+contact. Now the swing itself is art — a crescent that sweeps up over the hat,
+across the post and out to x=191 — and the rectangles are gone. What is left at
+the contact point is one jade sliver, because jade is what "correct" looks like
+everywhere else in this app.
+
+**Placement is computed, not eyeballed.** That sheet renders at about eight
+times the app's scale and shares no rig with the idle, so instead of matching
+coordinates the script matches anchors: scale so hat-top to feet is 60 rows
+(the idle's height), then draw at the x that lines the hat centres up (idle 31,
+this 32.5, so x=109) and the y that lands the feet on the floor line (y=2, feet
+at row 73 of 74). Verified in a browser: the swap does not move the character.
+
+**The figure now draws after the post.** The arc crosses it, and the brightest
+thing in the scene was disappearing behind a stick of wood. The idle ends at
+x=154 and the post starts at 164, so nothing else changed.
+
+**Two colour rules carry the decisions:**
+
+- **Steel is value >= 180 and not warm.** Not arbitrary: the robe's brightest
+  tone in this frame is 161, so above it is blade or arc and below it is cloth.
+  At 165 the downsample's ringing put pale flecks across the torso.
+- **The obi is assigned by band (rows 40-56), not by colour.** The sheet paints
+  it cream; the ronin wears it red. Matching the paint would mean he changes
+  clothes when he swings, and would drop the obi out of the armoury for the
+  whole strike, since a cream sash resolves to the hat's ramp rather than the
+  obi's. The shin wraps take the same rule from row 60 down.
+
+Checked: every letter the map uses resolves in `resolvePalette`, so there are
+no holes, and the robe, hakama and obi slots all still re-colour the pose.
+
+**The first cut had holes in him, fixed the same day.** The sheet has no alpha,
+so the figure is cut out by brightness — and the ronin's own outlines and
+deepest shadows are as dark as the black he stands on. Cutting at 28 punched
+them out of him, and the hall showed through in a scatter of 86 gaps that read
+as an unfinished sprite. Three changes, all in the script: the cutoff dropped
+to 4 (his darkest tones start just above the background's flat 0), every
+background pixel the border cannot reach is filled in, and any pixel the
+downsample still leaves transparent with three opaque orthogonal neighbours
+takes the commonest colour around it. Genuine gaps — inside the arc's crescent,
+between his legs — have at most two neighbours and are untouched. Zero interior
+holes now, and the completed silhouette moved the hat centre half a unit, so
+the draw position went from x=109 to x=110.
+
+**Still open:**
+- **The left-hand pose on that sheet is unused.** It swings the other way. If
+  the composition ever puts a second post on the left, or a miss wants its own
+  pose instead of the idle plus `anim-flinch`, it is already drawn.
+- **The strike is still one frame.** The motion is all CSS; the sheet has no
+  in-betweens.
+- **The shin wraps read tan here and red on the idle.** The band rule sends
+  most of that cream to the leather tones, which looks right on its own but is
+  not quite the same character detail. Invisible at 60px; real if the figure
+  ever gets bigger.
+
+## A flurry: fast answers should look like continuous attack
+
+**What:** More than one strike frame, cycled, so that a fast run of correct
+answers reads as one continuous flurry instead of the same pose flashing on and
+off.
+
+**Why:** the mental math drill is timed and a good streak lands answers a
+second apart or better, which is precisely when the animation stops working.
+
+**There is a concrete bug underneath this, and it should be fixed first,
+because it is most of the problem and costs nothing.** `app/play/page.tsx` sets
+`mood` to `"strike"` and schedules `setMood("idle")` 480ms later, keyed on
+`state.lastAward?.seq`. Answer again inside that window and the effect re-runs,
+clears the pending timer and sets `"strike"` again — but `mood` never left
+`"strike"`, so the `anim-lunge` class never leaves and re-enters the DOM and
+**the animation does not replay**.
+
+Measured in a browser, answering twice about 300ms apart, reading
+`getAnimations()` off the lunge group:
+
+| when | animation currentTime |
+|---|---|
+| 150ms after the first answer | 117ms — playing |
+| 60ms after the second answer | 333ms — still the *first* one, not restarted |
+| 480ms | `[]` — finished, while the pose is still on screen |
+
+So the second strike of a fast pair produces no movement at all, and then a
+static lunge sits there until the mood expires. The fix is the pattern the same
+file already uses for the XP number: `key={award.seq}` on the animated group in
+`Dojo.tsx` remounts it and replays. Do that before drawing anything new.
+
+**Then the frames.** Two sources exist and neither needs new art:
+
+- `Sprites/roning_attack.png` has a second pose, swinging the other way,
+  currently unused.
+- `Sprites/Rough_ronin_with_straw_h-Sword_attacking_fro` is a full 8-direction
+  set of a different attack — sword held across the body, a good wind-up or
+  recovery either side of the big swing. It was transcribed once (1:1, since
+  that sheet shares the idle's rig) before the arc sheet arrived, so the route
+  is known to work.
+
+`scripts/sprites/ronin-attack.py` is parameterised by frame and anchors, so
+generating another map is a few minutes.
+
+**The cost is where it always is with this approach: source size.** Each frame
+is 74 rows of 83 characters, about 6KB inside `Dojo.tsx`. Three frames is 18KB
+of character grid in a component that is already 500 lines. Two ways out, and
+they are not equal:
+
+1. Move the maps to a data module and leave `Dojo.tsx` as the renderer. Cheap,
+   keeps the avatar palette working, and the grids stop drowning the component.
+2. Render the frames to a PNG sprite sheet the way the hall was done. Smaller
+   and faster, but it bakes the palette in — the armoury would stop reaching
+   the ronin during a strike, which is exactly the trade the hall entry decided
+   the other way for the room. Do not take this one without deciding that the
+   figure is art rather than kit.
+
+**Also settle:** what drives the cycle. Frame per strike index is the obvious
+answer (`award.seq % frames`), so a flurry visibly alternates rather than
+repeating. And `prefers-reduced-motion` already cuts `anim-lunge` — a frame
+cycle is a new kind of motion and needs its own answer there, probably "hold
+one frame".
+
+**Depends on:** nothing. The replay bug is a one-line fix and worth doing on
+its own even if no new frames ever land.
+
+## The 16-bit hall — shipped 2026-09-09
+
+`components/Dojo.tsx` no longer draws the room. The wall, floor, shoji bays,
+banner and lantern rects are gone; the hall is `public/hall/hall.png`, derived
+from `Sprites/Background` (1983x793, 155k colours — an AI render in a pixel
+style rather than actual pixel art) by resampling to **288x115 and quantising
+to 32 colours**. 288 is the scene's viewBox width, so the room sits on exactly
+the grid the ronin does: one art pixel per viewBox unit, nothing on screen
+secretly a different resolution from the thing beside it. 11KB.
+
+**The decision the old entry said to make first: the room is art, not a
+themeable surface.** Its palette is baked into the PNG. Rank and avatar palette
+shifts no longer reach the walls, and that is accepted — the figure is what the
+armoury dresses. What stayed in vector is the part that has to respond to
+state: the lamp light, now two 7x7 rects sat exactly on the paper of the
+lanterns in the art, fading in on a 3+ combo. The `quiet` mood needed no new
+treatment after all — the existing whole-scene `opacity-35` reads as the room
+in shadow, which was checked in a browser rather than assumed.
+
+`--color-hall-rail`, `-floor`, `-banner`, `-rod` and `-lamp-case-lit` were
+deleted with the rects that used them. `--color-hall-wall` survives as the
+letterbox band and is now **sampled from the top visible row of hall.png** — if
+the art is re-exported, re-sample it or the band stops matching.
+
+**The letterbox is handled by drawing outside the viewBox.** The art is 2.5:1,
+the scene is 3:1, and the container is neither (about 7:1 on the home page,
+about 1.5:1 on a phone). The root svg clips to the container, not to the
+viewBox, so content drawn outside 0-288 paints into the bands `meet` leaves
+over. Vertically that is free — the image is 19 rows taller than the scene, so
+hanging it at `y=-19` puts its own ceiling beams in the band above. Sideways
+there is nothing to continue with, so each side gets the room mirrored; the art
+has a lit shoji bay at both ends, so the join reads as more hall rather than as
+a fold. The home page is now full-bleed room with no seam.
+
+The figures moved up 2 units (feet at y=75) to land on the platform's lit
+boards rather than on its dark front edge.
+
+**Still open:**
+- **A phone still gets a band above the room.** 19 rows of real ceiling now,
+  then flat `hall-wall` above that. Better than the old flat band, not fixed.
+  Slice-filling would frame a phone beautifully — the ronin and the post both
+  sit inside the middle 51% — but the same rule crops heads at 7:1, and
+  `preserveAspectRatio` cannot be switched by media query. It needs the
+  narrower composition the old entry asked for, or a measured container aspect
+  in JS, which is a hydration risk for a cosmetic gain.
+- **The training post stands in front of the torii and its hanging scroll.**
+  Readable, slightly busy. Moving the pair left, in front of the bright shoji
+  bay, would silhouette the ronin better; it also moves the XP number and the
+  combo count, which live in scene coordinates.
+- ~~**`Sprites/Background` is the source and is untracked.**~~ The derivation
+  is now `scripts/sprites/hall.py`, which re-prints the `--color-hall-wall`
+  value to re-sample along with the PNG. The source art still needs committing
+  alongside it.
+
+## Custom problem sets — a topic goes in, a generated set comes out
+
+**What:** A third way in alongside the two authored drills: the learner types a topic
+("integration by parts", "logarithm rules") and gets a practice set built for it.
+
+**Why:** The bank is thirty calculus questions. A learner who wants something it does not
+cover has nowhere to go, and authoring is the bottleneck the whole project keeps hitting.
+This is the feature that makes the app useful beyond what one person had time to write.
+
+**This inverts design doc constraint #1, and that has to be faced rather than discovered.**
+The constraint says questions are versioned content files, validated at build time, *never
+generated at runtime* — and the reason given is competitive: free Socratic tutoring is
+already commoditised, so the authored, misconception-keyed bank is the defensible asset.
+A generate-on-demand feature is the thing the constraint exists to prevent.
+
+Two honest readings:
+
+1. **It is a different product surface, not a replacement.** The authored bank stays the
+   crown jewels and the spine of progression; generated sets are a scratchpad for topics
+   the bank does not reach. Nothing about the bank changes.
+2. **It quietly makes the bank optional.** If generated sets are as good, the authored
+   thirty are thirty questions of sunk cost, and the moat is gone.
+
+Which one is true depends almost entirely on whether generated questions can be trusted,
+which is the engineering problem below.
+
+**The hard part is not generation, it is the answer key.** Everything downstream grades
+against `canonicalAnswer` with the equivalence checker. If a model invents the question
+*and* its own answer key, a wrong key marks correct work incorrect — the single worst
+failure this app can have. It teaches the wrong thing and burns trust in one move, and the
+learner has no way to tell whose fault it was.
+
+Mental math is the precedent *for* runtime generation, and it is worth being precise about
+why it is safe: it is procedurally generated from arithmetic the code performs itself, and
+`lib/content/mental.test.ts` proves over a wide sample that every answer is the arithmetic
+it claims. There is no model in that loop. None of that assurance transfers here.
+
+**What makes it defensible, and most of the machinery already exists:**
+
+- Validate every generated question through `QuestionSchema` (Zod). It already demands a
+  worked solution of >=2 steps, exactly 3 hint rungs, and >=2 named misconceptions with the
+  wrong answers they produce. A model that cannot fill that in has not produced a question.
+- Then run the *semantic* checks `scripts/validate-content.ts` already performs on authored
+  content, which are the ones that matter: the worked solution's last step must be
+  equivalent to `canonicalAnswer`, and every misconception's `wrongAnswer` must be
+  genuinely wrong (`validate-content.ts:63`). Both go through `compareAnswers`, which is
+  content-agnostic and works on generated questions unchanged.
+- Anything failing either pass is dropped silently and regenerated, never shown. Aim to
+  over-generate and discard rather than to repair.
+- Independently verify by differentiating or evaluating where the answer type allows it —
+  the checker already differentiates for antiderivatives.
+
+**The progression question, which is a product call and not a technical one:** ranks are
+gated on demonstrated accuracy *at a tier* (constraint #5), and a generated question's tier
+is whatever the model claims it is. Let generated sets feed mastery and the gate stops
+meaning anything — ask for easy questions labelled tier 5 and rank up on them. The obvious
+answer is that generated sets earn no XP and no rank progress, the same call already made
+for speed in the mental-math drill, and for the same reason. Settle it before building, or
+the gate quietly stops being a gate.
+
+**Pros:** Removes authoring as the ceiling on the product's usefulness. Directly serves the
+builder's own stated need — relearning first-year calculus is not confined to thirty
+questions. The validation machinery is largely built.
+
+**Cons:** Runs against the project's stated moat (above). Real cost per set, and unlike the
+tutor's $0.03-per-pause ceiling this is tens of questions per request — needs its own budget
+and quota before a single call is made. Generated hint ladders and misconceptions will be
+blander than authored ones even when they are correct, and the misconception-keyed ladder is
+the thing the tutor's whole design rests on. Plus a moderation surface the app does not have
+today: the topic field is free text from a user, going into a model.
+
+**Context:** `/api/tutor` is the pattern to copy for the route — server-side key, origin
+check, shared secret, hard provider spend cap, and dev-mode cost logging. `lib/tutor/config.ts`
+already holds the rate cards and the cost arithmetic, and its per-pause ceiling should get a
+per-set sibling rather than being reused. The generated bank should be persisted in IndexedDB
+next to the profile so a set survives a reload, which means the analytics store's rotation
+entry above stops being optional. Reuse `lib/content/drills.ts` as the registry — a generated
+set is just another `Question[]`, which is the whole point of the architecture and the reason
+this is cheaper to build than it looks.
+
+**Depends on:** Nothing technically. Decide the progression question and the constraint-#1
+reading first, because both change what gets built.
