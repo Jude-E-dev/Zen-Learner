@@ -410,28 +410,47 @@ export function Dojo({
           only thing left in vector is the lamp, which is state-dependent and
           has to be.
 
-          Three copies, because the scene letterboxes.
+          Seven copies, because the scene letterboxes and some of the boxes
+          are very wide.
 
           The art is 2.5:1 and the scene is 3:1, and the container is neither:
-          about 7:1 on the home page and nearer 1.4:1 on a phone. Content
-          drawn outside the viewBox still paints into the bands `meet` leaves
-          over — the root svg clips to the container, not to the viewBox — so
-          the bands get the room continued into them rather than a flat
-          colour and a seam.
+          about 7:1 on the home page, 2.5:1 on the play route now that the
+          frame is capped, and 12:1 for the strip the room shrinks to when the
+          pause or the armoury opens. Content drawn outside the viewBox still
+          paints into the bands `meet` leaves over — the root svg clips to the
+          container, not to the viewBox — so the bands get the room continued
+          into them rather than a flat colour and a seam.
 
           Vertically that is free: the image is 19 rows taller than the scene,
           so hanging it at y=-19 puts its own ceiling beams in the band above.
-          Horizontally there is nothing to continue with, so each side gets
-          the room mirrored. The art is near-symmetric — a lit shoji bay at
-          both ends — so the join reads as more hall rather than as a fold.
+          Horizontally there is nothing to continue with, so the room is tiled
+          outward, mirrored at every join. The art is near-symmetric — a lit
+          shoji bay at both ends — so a join reads as more hall rather than as
+          a fold.
+
+          Three tiles each side rather than one. One covered the home page's
+          7:1 and stopped: at the pause strip's 12:1 the tiles ran out around
+          x=-288 and x=576 and the flat `hall-wall` came back as a maroon band
+          at each end of the strip — the same defect the vertical cap removed,
+          rotated 90 degrees. Three covers 26:1, which is wider than any box
+          this component is given.
         */}
         <g transform="translate(0 -19)">
-          {[
-            { key: "hall", transform: undefined },
-            { key: "hall-left", transform: "scale(-1 1)" },
-            { key: "hall-right", transform: "translate(576 0) scale(-1 1)" },
-          ].map(({ key, transform }) => (
-            <g key={key} transform={transform}>
+          {[-3, -2, -1, 0, 1, 2, 3].map((tile) => (
+            <g
+              key={tile}
+              /*
+                Even tiles repeat, odd tiles mirror, so every seam is a
+                reflection: tile k spans [288k, 288k+288].
+              */
+              transform={
+                tile === 0
+                  ? undefined
+                  : tile % 2 === 0
+                    ? `translate(${288 * tile} 0)`
+                    : `translate(${288 * (tile + 1)} 0) scale(-1 1)`
+              }
+            >
               <image
                 href="/hall/hall.png"
                 x="0"
