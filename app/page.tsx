@@ -123,7 +123,19 @@ export default function TopicSelect() {
                     active ? "border-jade-deep bg-ink" : "border-ink-line"
                   }`}
                 >
-                  <div className="min-w-0">
+                  {/*
+                    `flex-1` so this column absorbs the slack and shrinks,
+                    rather than sizing to its content and pushing the action
+                    group onto a second line.
+
+                    Without it the row wrapped whenever the subtopic list ran
+                    long, and `justify-between` then left-aligned the wrapped
+                    line. Calculus has ten subtopics and wrapped; mental math
+                    has six and did not — so the two BEGIN buttons, the two
+                    most important actions on the page, sat 622px apart with
+                    nothing but the length of a metadata list deciding it.
+                  */}
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-3">
                       <h2 className="font-bitmap text-gold text-xl tracking-widest">
                         {drill.name}
