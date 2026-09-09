@@ -7,16 +7,19 @@
  * is a strike that lands. XP is damage. The streak is a combo. Getting stuck
  * quiets the whole room rather than just swapping a panel.
  *
- * The figure is traced from the 8-direction idle sheet in Sprites/, using the
- * south-east frame: a 3/4 view facing the post, which keeps the face, the
- * kimono lapels and the obi knot readable in a way the pure profile does not.
+ * Both poses come from Sprites/, from different sheets and by different
+ * routes. The idle is the south-east frame of the 8-direction idle sheet, a
+ * 3/4 view facing the post, traced by hand: the source is a 64-colour
+ * painterly render, and 64 colours is the opposite of 16-bit, so what carried
+ * over is the pose, the silhouette and the costume, with every material put
+ * back on a tight ramp of two or three tones and the dithering gone. The
+ * strike is resampled from roning_attack.png by script (see RONIN_ATTACK).
  *
- * The source is a 64-colour painterly render, and 64 colours is the opposite
- * of 16-bit. What carried over is the pose, the silhouette and the costume;
- * what changed is that every material now runs on a tight ramp of two or three
- * tones, the dithering is gone, and the whole scene sits on one pixel grid —
- * every element is drawn at one art pixel per viewBox unit, so nothing is
- * secretly half the resolution of the thing beside it.
+ * Nothing is hand-aligned between them. The strike is scaled to the idle's
+ * hat-to-feet height and placed by hat centre and floor line, so the swap
+ * does not move the character. Either way the whole scene sits on one pixel
+ * grid — every element is drawn at one art pixel per viewBox unit, so nothing
+ * is secretly half the resolution of the thing beside it.
  *
  * Everything is still drawn from the character maps below. No sprite packs, no
  * licensing ambiguity (constraint #10), and editing the art means editing a
@@ -123,67 +126,123 @@ export const RONIN_LOWER = [
   "......................XXXXXXX...............................",
 ];
 
+/*
+ * The strike, from Sprites/roning_attack.png — the right-hand of the two
+ * poses on that sheet, the one swinging toward the post. The arc is drawn
+ * into the art, which is why there is no hand-made contact flash any more.
+ *
+ * Unlike the idle, this is not a 1:1 transcription: that sheet is rendered at
+ * roughly eight times the app's scale, so it is resampled. Two anchors put it
+ * back exactly where the idle stands — the figure is scaled so hat-top to
+ * feet is 60 rows, the idle's height, and then drawn at x=109, y=2 so the hat
+ * centres line up (idle 31, this 32.5) and the feet land on y=75. Nothing is
+ * eyeballed; the numbers come out of the script.
+ *
+ * Colour is where the work is. 116k source colours have to land in the
+ * 19-letter palette the armoury re-colours, and two of the rules are about
+ * character rather than fidelity:
+ *
+ *   - The cutout is by brightness, because the sheet has no alpha — and the
+ *     ronin's own outlines and deepest shadows are as dark as the black he
+ *     stands on. Cutting at 28 punched them out of him and the hall showed
+ *     through in a scatter of holes that read as an unfinished sprite. The
+ *     cutoff is 4, everything the outside cannot reach is filled in, and any
+ *     pixel the downsample still leaves transparent with three opaque
+ *     neighbours takes the colour around it. Genuine gaps — inside the arc,
+ *     between his legs — have at most two neighbours and are left alone.
+ *   - Steel is anything at value >= 180 that is not warm. That threshold is
+ *     not arbitrary: the robe's brightest tone in this frame is 161, so
+ *     anything above it is blade or arc, and anything below stays cloth.
+ *   - The obi is assigned by band, rows 40-56, not by colour. The sheet
+ *     paints it cream and the ronin wears it red; matching the paint would
+ *     mean the character changes clothes when he swings, and would quietly
+ *     drop the obi out of the armoury for the whole strike, since a cream
+ *     sash resolves to the hat's ramp rather than the obi's. The shin wraps
+ *     take the same rule from row 60 down, where the same cream mostly lands
+ *     on the leather tones and reads as wrapping.
+ *
+ * 83 columns for a 60-row figure, because the arc sweeps well past him: it
+ * reaches x=191 in scene coordinates, across and beyond the post at 164-177.
+ * That is also why the whole figure is drawn after the post below.
+ *
+ * Regenerate with `python3 scripts/sprites/ronin-attack.py`, which prints
+ * exactly these rows.
+ */
 export const RONIN_ATTACK = [
-  ".............................XXXX...........................",
-  "............................XkkkjXXX........................",
-  "...........................XjjkkKKKkX.......................",
-  "...........................XjjkKKKKkjX......................",
-  ".......................XXXXjjjjkkKKKjX......................",
-  ".....................XXjjjjhhjkkKKKKjgXXX...................",
-  "....................XjjjjjjjhhhhhhhHhgkjjXX.................",
-  "....................XjjjjjjkkhhhHHHHhkkkkkjX................",
-  ".....................XjjkjjkkKKKkjjkkkKKkkkjX...............",
-  ".....................XgkjjjkKKKKkKKkkkKKKkkX................",
-  "...................XXgggjjjkKKjKkKKKkkKKKKX.................",
-  "....................XggghhhhjjjjkkkkkkXXXX..................",
-  ".....................XgggggggegssjjjjX......................",
-  "....................XhhhhghggegSsSSSX.......................",
-  "...................XghhhhghgghhSfffSX.......................",
-  "X................XXhgHHHgghssshhfssX........................",
-  "XX..............XhhhhgHHhhgssssheffgXX......................",
-  "XmX...........XXhhhhhghHhhgssssheehhhgX.....................",
-  "XmmX........XXhhhhhhhghhhhgffssgghhhhhhX....................",
-  ".XmmX......XhhhhhhhhgghhhhgffffghhhhmmhhX...................",
-  "..XmmX....XhhhhhhhhhhghhhhgffffHhHHhmmhhX...................",
-  "...XmmX..XhhggggghhhghhhhhgffhHHggghhhhX....................",
-  "....XmmXXgggggghhghgghhhhhmffhhHgggHHhhX....................",
-  ".....XmmmmgggghhHghXghhHHhmhhhhggHHHhhhX....................",
-  "......XmmmseegHHHgX.XhhHHhhhhhhhhHhhhhX.....................",
-  ".......XmmseegHHgX..XhhhhhhhhhhhhhhhhhX.....................",
-  "........XmsseHHHX...XhhhhhghhghhhHHhhhX.....................",
-  ".........XssSffHX...XghhhhggghhhhhHHhX......................",
-  "..........XsSffHmX..XhhhhgggghhhhHHhhX......................",
-  "...........XSSfeeeXXghhggghhoohhhHHhhoX.....................",
-  "............XSSeessssggggffhooHHHHhhooX.....................",
-  ".............XXssssssgggHHHHoogHHhhgooX.....................",
-  "...............XXssssfffpgggoggghhhgXX......................",
-  ".................XssSffffgoooogghhgX........................",
-  "...............XXsssSsffommmoooghggX........................",
-  "............XXXssssssssoommmommggghhX.......................",
-  "..........XXsssssshhhsSoommMMmmgghhhhX......................",
-  "........XXsssssshhhHHhhogghhMMMHHgghhhX.....................",
-  "......XXsssXXXgghhHHPPhhhghhmmmMMmmmggpX....................",
-  "....XXsssXX...XhhHHHPPHHhgHHhhhmmMMmmmpX....................",
-  "...XsssXX....XgghHHPfHHHhgHHhPHHmmmMMMPPXX..................",
-  "...XXXX......XhhppefHHHHhgHHHPHHPhhhmmMMmmXXX...............",
-  "............XhhhpppmHHPPhggPHggghhhhPPPMMMMmmXXX............",
-  "...........XhhhhpppmHHPphgpPHhhhhhhhPPPPPmmMMMMmXXX.........",
-  "..........XhhhhppppppppphgpPghhhhhhhhPPPPPpmXXXmmmmXXX......",
-  "..........XhhhpppPPpphhhhXXXXXhhhhhhhhhhPPpX...XXXMMmmXXX...",
-  "..........XhhhpPPPPPphhhX.....XXhhgghpphpppX......XXMMMmmXXX",
-  "..........XhhhhPPPPPhhhX........XgpppphhppgX........XXXXXXX.",
-  "..........XhhhhhPPhhhhX..........XhhhhhhhgX.................",
-  ".........XhhhhhhhhhhhhX...........XggggghX..................",
-  ".........XhhhhhhhhhhXX.............XhhhmX...................",
-  "........XshhhhhhXXXX...............XhhhmX...................",
-  ".......XhsshhhXX...................XhssX....................",
-  ".......XhsssXX.....................XsssX....................",
-  "......XphssX.......................XhhPX....................",
-  "......XpppX.......................XghPPeX...................",
-  ".....XshpwX.......................XshPPffXX.................",
-  ".....XwhhhgX......................XsghhhhhsX................",
-  ".....XwwswwX......................XXXXghffsX................",
-  ".....XXXXXXX..........................XXXXXX................",
+  "...............................HmmH................................................",
+  ".................................hmmg..............................................",
+  ".....................................HmmHH...H.....................................",
+  ".......................................mmmHhXHHH...................................",
+  ".........................................HmmHXXgX..................................",
+  "...........................................HmHHHhhXHh..............................",
+  ".............................................HHMMHHmmXgH...........................",
+  "...............................................hmMMHMmHgHH.........................",
+  ".................................................gMMmmmmHHmH.......................",
+  "...................................................HMMmMmhHMHH.....................",
+  "....................................................hmMmMMHmMMH....................",
+  ".....................................................hHmmMMMMMMmH..................",
+  ".....................................................HXhmMmMMmmMMH.................",
+  ".....................................................gHPHHmHMMMmMMH................",
+  "........................XefeeS......................PmPH..HmmmMMmMMHg..............",
+  ".......................gjfffffes...................PMP.....hmmmMMMMMHH.............",
+  ".......................sfffKffeh.................Pmmh.......hmMMMMMMmHH............",
+  "....................sgXhjeffejHHgos............gPmP..........gmMmMMMMHHHXXHg.......",
+  ".................sggsesghPPjPhHhjSSSs......ooXPmPh.............HMMMMMMmHXXgHX......",
+  ".................sSjfeeehhhhHpjfefjees.....XgshP................HMMMMMMmHXXgH......",
+  ".................XffeffffeffeffffeffSg...XefggS..................mMMMMMMMhXXhHX....",
+  "...................offffffffffffffSg.....gofess..................XmMmMMMMMhXXHH....",
+  "...................osfSkjefeffffsXXg..XsgggsjX....................hMMMMMMMmgXXHH...",
+  ".....................sgXXsfosfXffhhXgoogXSehX......................HMMMMMMMHX......",
+  "......................sgshgssojsghhghHgXggSo.......................HmMmMMMMMX...H..",
+  ".......................XXSfeffoghphHgXgHHHg........................HXmMmMMMMHX..H..",
+  ".......................gjgeffSXhHPXhXgHHhHH........................HHHMMMMMMMh.....",
+  "......................ghHPgeoXShhggXgHHphHh........................hHXmMMMMMMmX..Hg",
+  ".....................XhhXghgXgohghhHHhHphHh........................ghHHMMMMMMmX..HH",
+  ".....................hhhHHhPHgggPHgpHhPhghg.........................HmXHMMMMMMH..XM",
+  "....................ghHPhHPhhHhHPggHhHHhghh.........................HHXgMMMMMMH..gM",
+  "....................ghHhhHhgHhhHhgHHHhggghh..........................gXXmMMMMMmg..H",
+  "...................XghHhHghHhhHhgHHhhghgghg..........................HgXHMMMMMMH...",
+  "...................gghhHhgHhgHhgHHhhgggggg...........................MgXHMMMMMMH...",
+  "...................ggghhghhgHhgHHhgX.................................HgggmMMMMMH...",
+  "...................ggggggghHggHhgXXg....................................XHMMMMMHX..",
+  "...................ggXghghhggggXXghhg................................X...HMMMMMh..H",
+  "...................ggXgggggggXXXhhhg.................................H...HMMMMHX.Xm",
+  "...................gggXgggggXhgghhhg.................................HH..HMMMMH..hM",
+  "....................ghggXghghgghhhgg....................................hmMMMmX..HH",
+  ".......................XggghggggggXgggo.................................HmmMMHXXXmX",
+  ".......................ggXXXggXXXXhhgss.................................HMMMmgXXHHX",
+  ".......................gjpXgXXhOXSOgsss................................gmmMMhXXgMh.",
+  "......................hXsSOOjsSOgpjhXXs................................HmMMHXXXmmg.",
+  ".................pp..gHPggssHOsSghpgggXsos............................gHHMH..XHmg..",
+  ".................PpghjHgggpggOgXgghggggXsoSo.........................XHhmHX..gmH...",
+  ".................XhPHpXggPPHXggXsXHPgXggXXsoos.......................mHHmX...hHg...",
+  ".................XhgXXgHPPPgXhhXghgOPgggXXXsso......................HHhMH..........",
+  "...............hhpXghHOOPXggghhgXpsjOPhhXggg.......................HmgHH...HH......",
+  ".............shHXXghpOPpXgghhhhgXhhHPOghHggg......................HHhHX...HMX......",
+  "...........oosXXgggjOPhXgghHhhggXghpjgHgHHhXg....................HHXH....hMH.......",
+  ".........sSogXXggpOOpXgHhhHhhgggXXHghgHpgHHhg....................HHh...............",
+  ".......soSsgggghHhpgghHhhHhhggggXXgHhhHggHHPHh.................XhHH..XHm...........",
+  ".....soSossgXhHHPPghHHghHhHggghXXggHHHgghHHPHHh.............hh..HgH..HmH...........",
+  ".....oos...XhHHPPPHHhggHhHhgghgXggggHhXhhHHHhPHh...........HHg....Xgmm.............",
+  "...........gHPpHhghhhgggHhgghg...ggghgghhHHHHPHh.........HHh......HHH..............",
+  ".........ggghPHPHHHHhhgXhgghg.....gXhgghhHHPPHhgX......hHgH.....gHH................",
+  "........XhgXhhPHPPHHhggXXghg.........ggghhhHHhgXg.............H....................",
+  ".........ghghhhpHHhhgggXXgg...........XggghhggXgg...........HgH....................",
+  ".........gHhgggghhgggg.................gghhgXXghX..........hH......................",
+  ".......pHXhHhgXXXXhgg..................gHhggghgXX..................................",
+  "......PHPpXhhhgggXghg...................hggghXXpj..................................",
+  "......XgsspXggghgggg......................ghghjPHh.................................",
+  "......ghPskHgXgh..........................gHhhhgPp.................................",
+  "......PPppppHh.............................pXghsPh.................................",
+  ".....gkjHpgXp................................HPppk.................................",
+  ".....HjsPhh...................................ggPHX................................",
+  "...HHHHgg......................................hgSP................................",
+  "...gswSg.......................................sHsPX...............................",
+  "..phpHsp.......................................ghXps...............................",
+  "..gjPgsX......................................hhghjHp..............................",
+  "hPHppHg......................................ghgppghHggh...........................",
+  "gHHghHh..........................................XghHHHHg..........................",
+  "hHHPHHh..............................................p.............................",
 ];
 
 const POST = [
@@ -306,7 +365,9 @@ export function Dojo({
     <div
       /*
         The wall colour, not the page's, so the band left over when the room is
-        taller than its 3:1 art reads as ceiling rather than as a seam.
+        taller than its 3:1 art reads as ceiling rather than as a seam. The
+        token is sampled from the top visible row of hall.png, so the band
+        continues the art's ceiling shadow instead of butting against it.
       */
       className={`bg-hall-wall relative w-full overflow-hidden ${className}`}
       data-testid="dojo"
@@ -320,66 +381,99 @@ export function Dojo({
         }`}
         aria-hidden
       >
-        {/* Back wall and floor. Hard edges only — no gradients. */}
-        <rect x="0" y="0" width="288" height="78" fill="var(--color-hall-wall)" />
-        <rect x="0" y="12" width="288" height="1" fill="var(--color-hall-rail)" />
-        <rect x="0" y="78" width="288" height="2" fill="var(--color-ink-line)" />
-        <rect x="0" y="80" width="288" height="16" fill="var(--color-hall-floor)" />
-
         {/*
-          Two shoji bays, set wide of the action. An earlier pass ruled the
-          whole wall at even intervals and one of the lines ran straight
-          through the ronin's chest, which is the sort of thing that reads as
-          a rendering fault rather than as architecture.
+          The room itself: one 288x115 pixel image drawn at 1:1 — one art
+          pixel per viewBox unit, the same grid the ronin is drawn on, so
+          nothing on screen is secretly a different resolution from the thing
+          beside it. `preserveAspectRatio="none"` is exact here rather than
+          sloppy: the rect it is given IS the image's natural size.
+
+          This replaced about twenty hand-placed rects approximating a hall.
+          The trade is deliberate and worth stating: the room is now art
+          rather than a themeable surface. Its palette is baked into the PNG,
+          so rank and avatar palette shifts no longer reach the walls, and the
+          only thing left in vector is the lamp, which is state-dependent and
+          has to be.
+
+          Three copies, because the scene letterboxes.
+
+          The art is 2.5:1 and the scene is 3:1, and the container is neither:
+          about 7:1 on the home page and nearer 1.4:1 on a phone. Content
+          drawn outside the viewBox still paints into the bands `meet` leaves
+          over — the root svg clips to the container, not to the viewBox — so
+          the bands get the room continued into them rather than a flat
+          colour and a seam.
+
+          Vertically that is free: the image is 19 rows taller than the scene,
+          so hanging it at y=-19 puts its own ceiling beams in the band above.
+          Horizontally there is nothing to continue with, so each side gets
+          the room mirrored. The art is near-symmetric — a lit shoji bay at
+          both ends — so the join reads as more hall rather than as a fold.
         */}
-        {[16, 226].map((x) => (
-          <g key={x}>
-            <rect x={x} y="16" width="46" height="58" fill="var(--color-hall-banner)" />
-            <rect x={x} y="16" width="46" height="1" fill="var(--color-hall-rail)" />
-            <rect x={x + 23} y="16" width="1" height="58" fill="var(--color-hall-rail)" />
-            <rect x={x} y="44" width="46" height="1" fill="var(--color-hall-rail)" />
-          </g>
-        ))}
-
-        {/* Floor boards, so the ground reads as a surface rather than a band. */}
-        {[18, 66, 114, 162, 210, 258].map((x) => (
-          <rect key={x} x={x} y="80" width="1" height="16" fill="var(--color-hall-wall)" />
-        ))}
-
-        {/* Wall banner, hung from the ceiling. */}
-        <rect x="31" y="20" width="16" height="2" fill="var(--color-hall-rod)" />
-        <rect x="33" y="22" width="12" height="40" fill="var(--color-hall-wall)" />
-        <rect x="37" y="29" width="5" height="3" fill="var(--color-blood)" />
-        <rect x="37" y="36" width="5" height="3" fill="var(--color-blood)" />
-        <rect x="37" y="43" width="5" height="7" fill="var(--color-blood)" />
-        <rect x="33" y="62" width="12" height="1" fill="var(--color-hall-rod)" />
-
-        {/* Paper lantern on its cord. It warms as the combo builds. */}
-        <rect x="249" y="13" width="1" height="12" fill="var(--color-ink-line)" />
-        <rect
-          x="243"
-          y="25"
-          width="13"
-          height="16"
-          fill={lit ? "var(--color-hall-lamp-case-lit)" : "var(--color-hall-lamp-case-dim)"}
-        />
-        <rect
-          x="246"
-          y="29"
-          width="7"
-          height="9"
-          fill={lit ? "var(--color-hall-lamp-lit)" : "var(--color-hall-lamp-dim)"}
-        />
-        <rect x="246" y="41" width="7" height="1" fill="var(--color-ink-line)" />
+        <g transform="translate(0 -19)">
+          {[
+            { key: "hall", transform: undefined },
+            { key: "hall-left", transform: "scale(-1 1)" },
+            { key: "hall-right", transform: "translate(576 0) scale(-1 1)" },
+          ].map(({ key, transform }) => (
+            <g key={key} transform={transform}>
+              <image
+                href="/hall/hall.png"
+                x="0"
+                y="0"
+                width="288"
+                height="115"
+                preserveAspectRatio="none"
+                /* Without this the whole 16-bit premise dies on a retina screen. */
+                style={{ imageRendering: "pixelated" }}
+              />
+            </g>
+          ))}
+        </g>
 
         {/*
-          The ronin. Feet land on the floor line at y=77.
+          The two paper lanterns are in the art, but "the room warms as the
+          combo builds" is not — so the only thing still drawn by hand is the
+          light itself, sat exactly on the lanterns' paper.
+        */}
+        {[56, 256].map((x) => (
+          <rect
+            key={x}
+            x={x}
+            y="6"
+            width="7"
+            height="7"
+            fill="var(--color-hall-lamp-lit)"
+            opacity={lit ? 0.55 : 0}
+            className="transition-opacity duration-300"
+          />
+        ))}
+
+        {/* The post takes the hit, so it is what recoils. */}
+        <g
+          className={
+            mood === "strike" ? "anim-recoil" : mood === "miss" ? "anim-miss" : ""
+          }
+        >
+          <PixelArt map={POST} palette={palette} x={164} y={36} />
+        </g>
+
+        {/*
+          The ronin. Feet land at y=75, on the lit boards of the platform
+          rather than on the dark front edge below them.
 
           A strike swaps the whole figure for the attack pose from the sprite
           sheet rather than rotating a drawn rectangle past a standing body.
-          Both poses are cropped to one shared frame and aligned on the hat, so
-          the swap does not teleport the body sideways; the forward drive comes
-          from anim-lunge, deliberately, rather than from a framing accident.
+          Both poses are anchored on the hat and the floor line rather than on
+          a shared frame, so the swap does not teleport the body sideways; the
+          forward drive comes from anim-lunge, deliberately, rather than from
+          a framing accident.
+
+          Drawn after the post, not before it. The strike's arc sweeps across
+          and past the post, so the figure has to be in front of it or the
+          brightest thing in the scene disappears behind a stick of wood. The
+          idle never reaches that far — it ends at x=154 and the post starts
+          at 164 — so nothing else changes by moving it.
 
           The blade belongs to the pose, so there is no blade at rest — the
           sprite carries its sword sheathed, which is what a ronin with one
@@ -391,7 +485,7 @@ export function Dojo({
           }
         >
           {mood === "strike" ? (
-            <PixelArt map={RONIN_ATTACK} palette={palette} x={110} y={18} />
+            <PixelArt map={RONIN_ATTACK} palette={palette} x={110} y={2} />
           ) : (
             <>
               {/*
@@ -400,33 +494,23 @@ export function Dojo({
                 hole. An earlier version butted the two halves edge to edge and
                 a 2px lift opened a transparent line straight across the hips.
               */}
-              <PixelArt map={RONIN_LOWER} palette={palette} x={110} y={56} />
+              <PixelArt map={RONIN_LOWER} palette={palette} x={110} y={54} />
               <g className="anim-breathe">
-                <PixelArt map={RONIN_UPPER} palette={palette} x={110} y={18} />
+                <PixelArt map={RONIN_UPPER} palette={palette} x={110} y={16} />
               </g>
             </>
           )}
         </g>
 
-        {/* The post takes the hit, so it is what recoils. */}
-        <g
-          className={
-            mood === "strike" ? "anim-recoil" : mood === "miss" ? "anim-miss" : ""
-          }
-        >
-          <PixelArt map={POST} palette={palette} x={164} y={38} />
-        </g>
-
         {/*
-          The contact flash, at the height the blade actually meets the post
-          (the tip sits at y=64) rather than running the full height of it. A
-          bar the length of the whole post read as a second object standing in
-          front of it instead of as an impact.
+          The jade cue, at the height the arc actually crosses the post
+          (rows 49-61 of the scene). The white contact bar that used to sit
+          here is gone: the strike sprite draws its own arc, and a second
+          hand-made flash beside it read as a stray rectangle.
         */}
         {mood === "strike" && (
           <g className="anim-arc">
-            <rect x="162" y="54" width="2" height="20" fill="var(--color-paper)" />
-            <rect x="158" y="59" width="2" height="11" fill="var(--color-jade)" />
+            <rect x="166" y="52" width="2" height="10" fill="var(--color-jade)" />
           </g>
         )}
 

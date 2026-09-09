@@ -54,19 +54,20 @@
   --color-rung: #2f9b63;
 
   /*
-   * The practice hall's own surfaces. These live here rather than as hex
-   * literals inside Dojo.tsx so a palette change reaches the scene: the dojo
-   * used to re-declare ink-line and the accent colours by value, which held
-   * only for as long as nobody edited the tokens above.
+   * What is left of the practice hall's surfaces.
+   *
+   * The room used to be drawn here — a wall, a floor, shoji bays, a banner —
+   * and those tokens existed so a palette change reached the scene. The room
+   * is now a raster (public/hall/hall.png, and see the note in Dojo.tsx), so
+   * its palette lives in the file and these three are all that still draw:
+   * the letterbox band behind the art, the lamp light that has to respond to
+   * the combo, and the caption under the combo count.
+   *
+   * `hall-wall` is sampled from the top visible row of hall.png. If the art
+   * is ever re-exported, re-sample it or the band stops matching.
    */
-  --color-hall-wall: #12141b;
-  --color-hall-rail: #191d27;
-  --color-hall-floor: #191c25;
-  --color-hall-banner: #1d2230;
-  --color-hall-rod: #3b4a6b;
+  --color-hall-wall: #25131c;
   --color-hall-lamp-lit: #ffe9b0;
-  --color-hall-lamp-dim: #c9a45a;
-  --color-hall-lamp-case-lit: #f5b544;
   --color-hall-lamp-case-dim: #8a6a2a;
   --color-timber: #7a5a3a;
 
