@@ -41,16 +41,51 @@ export function Banner({ message }: { message: BannerMessage | null }) {
     return () => clearTimeout(timer);
   }, [message?.seq, message?.kind, message]);
 
-  if (!visible) return null;
+  const big = visible?.kind === "rank-up";
 
-  const big = visible.kind === "rank-up";
+  /*
+   * The live region is mounted always, and empty when there is nothing to say.
+   *
+   * It used to sit on the overlay below, which returns null when idle — so the
+   * region was inserted into the tree with its message already inside it.
+   * Screen readers announce mutations *within* a region that was already
+   * present; one that appears fully-formed is normally silent. The rank-up is
+   * the payoff for weeks of work, it is `pointer-events-none` and purely
+   * visual, and it was being announced to nobody.
+   *
+   * Separating the two also lets the announcement be a plain sentence rather
+   * than the three styled fragments the overlay is composed of.
+   */
+  const announcement = visible
+    ? `${labelFor(visible.kind)}: ${visible.title}${visible.detail ? `. ${visible.detail}` : ""}`
+    : "";
 
+  return (
+    <>
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
+      {visible && (
+        <BannerOverlay visible={visible} big={big} />
+      )}
+    </>
+  );
+}
+
+function BannerOverlay({
+  visible,
+  big,
+}: {
+  visible: BannerMessage;
+  big: boolean;
+}) {
   return (
     <div
       // Pointer events off so the grind underneath stays fully usable.
+      // aria-hidden because the sr-only region above already says this, and
+      // saying it twice is worse than not saying it at all.
+      aria-hidden
       className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
-      role="status"
-      aria-live="polite"
     >
       {/* A rank is weeks of work paying off, so it gets the whole screen for a
           beat. Tier moves are frequent and stay quiet by comparison. */}

@@ -96,15 +96,21 @@ export function PausePanel({
             holds its space and says so, so the panel does not jump when the
             reply lands.
           */}
-          <div className="flex gap-3">
+          {/*
+            The live region is the row, not the message inside it.
+            `aria-live` used to sit on the "reading what you wrote" paragraph,
+            which exists only while the request is in flight — so the region
+            was mounted with its content and then unmounted, and a screen
+            reader announced neither the wait nor the reply that replaced it.
+            Marking the row means the swap is a mutation inside a region that
+            was already there, which is the thing that actually gets read out.
+          */}
+          <div className="flex gap-3" aria-live="polite">
             <span className="text-rung shrink-0 tabular-nums">
               {String(state.hintRung).padStart(2, "0")}
             </span>
             {thinking ? (
-              <p
-                aria-live="polite"
-                className="text-paper-dim anim-quiet leading-relaxed"
-              >
+              <p className="text-paper-dim anim-quiet leading-relaxed">
                 The tutor is reading what you wrote…
               </p>
             ) : (
