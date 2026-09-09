@@ -422,6 +422,19 @@ function Play() {
 
     return (
       <main className="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center gap-6 px-5 py-10">
+        {/*
+          The screen a learner lands on when a session ends had no heading of
+          any kind — no h1, no h2, not even a hidden one — so assistive tech
+          announced the end of the whole loop as an unnamed document. The
+          shared `/summary` route does this correctly for the same component;
+          this branch was the one that missed it. Hidden rather than drawn,
+          because SummaryCard already says all of this to anyone who can see
+          it.
+        */}
+        <h1 className="sr-only">
+          Zen Mode {drill.name.toLowerCase()} — session complete, {summary.accuracy}%
+          accuracy, rank {rank.current.name}
+        </h1>
         <SummaryCard
           summary={summary}
           actions={
