@@ -250,15 +250,19 @@ Two of the four are done. Full report in
 - ~~**The ronin was a hand-drawn 20x22 grid.**~~ Done 2026-09-08. Redrawn from
   `Sprites/` at 16 colours on a single 288x96 pixel grid, with a fourth avatar
   slot (hakama) the new sprite made possible.
-- **The hall grows a tall ceiling on narrow viewports.** Partly addressed
-  2026-09-09 by the raster swap above: the band above the scene now carries 19
-  rows of the art's own ceiling before it falls back to flat colour. The rest
-  of the band, and the analysis of why a different fit rule cannot fix it,
-  is in "The 16-bit hall" entry above.
-- **Reduced motion is verified by source, not by observation.** All ten
+- ~~**The hall grows a tall ceiling on narrow viewports.**~~ Closed
+  2026-09-10 by `/design-review`. The frame is now capped to the art's own
+  288x115, the ratio at which the art fills it exactly — the scene is 96 units
+  tall inside a 115-row image and the 19 rows left over are precisely the
+  ceiling above the viewBox. No band at any width, and no new composition was
+  needed after all. The same defect rotated 90 degrees (the room running out
+  at the 12:1 pause strip) was fixed alongside it by tiling three deep.
+- **Reduced motion is verified by source, not by observation.** All nine
   animation classes are in the `prefers-reduced-motion` block in
-  `app/globals.css`, but the headless browser used for the review could not
-  emulate the preference, so nobody has watched the app with it on.
+  `app/globals.css` — re-confirmed 2026-09-10, one class per keyframe, none
+  missing — but the headless browser still cannot emulate the preference, so
+  nobody has watched the app with it on. (The tenth, `.anim-hit`, turns out to
+  have no consumers at all; see the 2026-09-10 entry.)
 
 ---
 
@@ -345,6 +349,80 @@ the draw position went from x=109 to x=110.
   most of that cream to the leather tones, which looks right on its own but is
   not quite the same character detail. Invisible at 60px; real if the figure
   ever gets bigger.
+
+## Design polish deferred from the 2026-09-10 review
+
+Eight findings were fixed and committed that day; these are what the review
+found and did not fix, stopped at the 20% design-fix risk threshold. Full
+report in `~/.gstack/projects/Zen_Learner/designs/design-audit-20260910/`.
+
+**Fixed that day, for the record:** the maths rendering in Computer Modern
+serif on every calculus question (`.katex` set only `font-size`, and the
+comment above it described a rule that was never written); drill blurbs at
+eleven characters a line on a phone; the hall's flat maroon slab at narrow
+widths and its maroon ends at the 12:1 pause strip; ARMOURY at 49x16; the
+finished-session screen having no heading; the 72px rank-up title in the body
+face; in-scene labels vanishing into the lit art.
+
+**Two HIGH, both systems-level and both cheap:**
+
+- **Six tracking values, four of them arbitrary, across 9 files.**
+  `tracking-widest` x28, `tracking-[0.2em]` x11, plus `[0.3em]`, `[0.25em]`,
+  `[0.4em]` and `tracking-wide`. `text-label` alone carries five different
+  trackings plus none. `--text-label` was tokenised precisely because the size
+  had been written as `text-[10px]` in 21 places, and the same fix stopped one
+  step short of `--tracking-label` beside it.
+- **No button scale.** Thirteen controls, five padding/size combinations chosen
+  per call site. The primary action is `px-6 py-3 text-base` on the home screen
+  and `px-5 py-2 text-xs` on the summary screen — the two most important
+  buttons in the product, at visibly different weights — plus five different
+  hover vocabularies for one tier of control. Three named tiers in
+  `globals.css` beside `.pixel-frame` collapses all of it.
+
+**Accessibility, both MEDIUM:**
+
+- **Wrong answers are announced; correct answers are silent.** The live region
+  in `app/play/page.tsx` only ever fills for miss, unreadable and
+  needs-evaluation. A correct answer's entire feedback is the XP number and the
+  strike, both inside the `aria-hidden` SVG. A screen-reader user is told every
+  time they are wrong and never told they are right.
+- **`TierBars` is unlabelled and is the only content in the app dropped
+  entirely below 640px.** It renders bare numerals over `T1`..`T5`, so it reads
+  as "24 T1 6 T2", and `hidden sm:flex` removes it with no fallback in a
+  codebase that otherwise only ever reflows.
+
+**Systems drift, MEDIUM:**
+
+- **Four panel paddings for one surface** (`p-4`, `p-5`, `p-6`, `p-7`); `p-5`
+  is clearly the house value and the question card is the one-site deviation.
+  **Four `Dojo` heights** invented at four call sites — the component takes
+  `mood` as a typed union but leaves size as a free-form string.
+- **Seven ad-hoc opacity modifiers at six values** survived the cleanup that
+  was meant to remove them: `border-gold/50` and `border-gold/60` for the same
+  warning-frame intent in two files, `bg-ink/85` and `bg-ink/90` ten lines
+  apart. Contrast is fine on all of them; this is a systems leak, not a bug.
+
+**Empty states, MEDIUM:**
+
+- **The rank meters read as loading skeletons at zero progress** — two
+  full-width rows of dashes. With data they read correctly, which is why this
+  was missed twice.
+- **Ending a session with nothing answered shows `0%` as the largest thing on
+  screen.** An empty state drawn as a failure.
+- **Keyboard-only legends still show at 375px** on `/` and `/play`
+  ("SHIFT+ENTER WHEN STUCK"), where there is no keyboard. Carried from
+  2026-09-09.
+
+**Verified dead, POLISH:** `.anim-hit` and `@keyframes hit-pop` have zero
+consumers — about 15 lines including a bespoke reduced-motion clause.
+`--color-timber` has zero consumers and `Dojo.tsx:46` hardcodes its value.
+Both confirmed by grep, both safe to delete.
+
+**One claim disproved, worth not re-deriving:** the source audit reported
+`antialiased` on `<body>` defeating `-webkit-font-smoothing: none` in
+`globals.css`, with a specificity argument. Live, the computed value on both
+`html` and `body` is `none` — Tailwind v4's layer order keeps the base rule
+winning. Not a finding.
 
 ## A flurry: fast answers should look like continuous attack
 
