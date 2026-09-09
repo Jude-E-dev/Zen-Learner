@@ -107,8 +107,18 @@ function BannerOverlay({
           {labelFor(visible.kind)}
         </span>
 
+        {/*
+          The display face, which this was missing.
+
+          This is the largest type in the product and the payoff the whole
+          progression exists to hand out — and it rendered in the monospace
+          body stack while `Hud` rendered the very same rank name in
+          Silkscreen a few pixels away. The face's stated job is short
+          uppercase labels, headings and big numerals; the two things this
+          span ever carries are a rank name at 72px and "TIER 3" at 24px.
+        */}
         <span
-          className={`${
+          className={`font-bitmap ${
             big ? "text-gold text-7xl" : "text-paper text-2xl"
           } leading-none`}
         >
