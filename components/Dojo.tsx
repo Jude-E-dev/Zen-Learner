@@ -271,7 +271,22 @@ export function Dojo({
   award = null,
   avatar = defaultAvatar(),
   rankId = "kensei",
-  className = "grow",
+  /*
+   * `grow` with a floor.
+   *
+   * The hall is the only elastic child of an `h-dvh` column in which every
+   * other block is `shrink-0`, so it is the one thing that yields when the
+   * viewport runs short — and `min-h-0` on its parent removed even the
+   * content floor. On a 375x812 phone the home page's header and drill panel
+   * already exceed the viewport, so the hall was allotted exactly 0px: the
+   * ronin, the whole visual identity of the product and the thing the armoury
+   * lets you dress, rendered at zero height and vanished.
+   *
+   * A 3:1 scene below about 100px is a smear anyway, so this is the height
+   * under which there is no point drawing it at all. Pages that want the
+   * deliberate quiet strip pass their own height and are unaffected.
+   */
+  className = "min-h-[7.5rem] grow",
 }: {
   mood: DojoMood;
   combo: number;

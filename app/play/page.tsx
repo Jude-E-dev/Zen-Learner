@@ -482,7 +482,7 @@ function Play() {
 
   return (
     <main
-      className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 px-5 py-5"
+      className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 overflow-y-auto px-5 py-5"
       onKeyDown={handleKeyDown}
     >
       {/*
@@ -574,7 +574,7 @@ function Play() {
           avatar={profile.avatar}
           rankId={rank.current.id}
           className={
-            armoury ? "h-28 shrink-0" : inPause ? "h-20 shrink-0" : "grow"
+            armoury ? "h-28 shrink-0" : inPause ? "h-20 shrink-0" : "min-h-[7.5rem] grow"
           }
         />
 
