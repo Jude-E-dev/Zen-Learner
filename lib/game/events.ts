@@ -35,6 +35,27 @@ export type GameEvent =
       trigger: "manual" | "offered";
     }
   | { type: "hint_rung"; ts: number; questionId: string; rung: number }
+  | {
+      type: "tutor_replied";
+      ts: number;
+      questionId: string;
+      rung: number;
+      /** Whether the first reply leaked and the retry stood in. */
+      retried: boolean;
+    }
+  /**
+   * The headline quality metric. A rising fallback rate means the prompt is
+   * leaking, the provider is flaking, or the quota is too tight — and which of
+   * those it is has to be readable from the log, so the reason is carried
+   * rather than collapsed into a boolean.
+   */
+  | {
+      type: "tutor_fallback";
+      ts: number;
+      questionId: string;
+      rung: number;
+      reason: "leak" | "provider-error" | "timeout" | "not-configured" | "quota";
+    }
   | { type: "solution_revealed"; ts: number; questionId: string }
   | {
       type: "pause_ended";

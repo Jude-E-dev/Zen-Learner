@@ -299,6 +299,19 @@ export function advanceHint(state: SessionState, now = Date.now()): SessionState
   };
 }
 
+/**
+ * Append an event that the loop itself did not cause.
+ *
+ * The tutor lives outside this state machine — it is a network call the UI
+ * makes during a pause, and whether it replied or fell back has no bearing on
+ * phase, XP or tier. But it does belong in the same ordered log, because
+ * "did the pause unstick people" (design doc #7) is answered by reading a
+ * tutor outcome and the next `answer_submitted` in sequence.
+ */
+export function recordEvent(state: SessionState, event: GameEvent): SessionState {
+  return { ...state, events: [...state.events, event] };
+}
+
 /** Leave the pause with the question intact and re-presented fresh. */
 export function resumeFromPause(
   state: SessionState,

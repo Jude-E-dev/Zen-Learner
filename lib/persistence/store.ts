@@ -1,6 +1,7 @@
 import type { GameEvent } from "../game/events";
 import { emptyMastery, type MasteryStats } from "../game/ranks";
 import { defaultAvatar, normalizeAvatar, type AvatarChoice } from "../game/avatar";
+import { emptyQuota, normalizeQuota, type PauseQuota } from "../tutor/quota";
 
 /**
  * Persistence behind an interface.
@@ -12,7 +13,7 @@ import { defaultAvatar, normalizeAvatar, type AvatarChoice } from "../game/avata
  * modes and the app has to stay playable there.
  */
 
-export const PROFILE_VERSION = 2;
+export const PROFILE_VERSION = 3;
 
 export interface Profile {
   version: number;
@@ -25,6 +26,8 @@ export interface Profile {
   lastSessionAt: number | null;
   /** How the learner has dressed their ronin. Added in version 2. */
   avatar: AvatarChoice;
+  /** AI-tutored pauses spent today. Added in version 3. */
+  pauseQuota: PauseQuota;
 }
 
 export function emptyProfile(): Profile {
@@ -36,6 +39,7 @@ export function emptyProfile(): Profile {
     sessions: 0,
     lastSessionAt: null,
     avatar: defaultAvatar(),
+    pauseQuota: emptyQuota(),
   };
 }
 
@@ -110,11 +114,16 @@ function migrateMastery(raw: unknown): MasteryStats {
 }
 
 /**
- * Version 2 added the avatar. Every other field is unchanged, so a version 1
- * profile upgrades by filling in a default rather than starting over — a
- * learner who has ground their way to Samurai must not lose it to a cosmetic
- * feature. Only a version from the future is still treated as unreadable,
- * because that shape genuinely is unknown to this build.
+ * Version 2 added the avatar; version 3 added the daily pause quota. Every
+ * other field is unchanged, so an older profile upgrades by filling in a
+ * default rather than starting over — a learner who has ground their way to
+ * Samurai must not lose it to a cosmetic feature or a spend counter. Only a
+ * version from the future is still treated as unreadable, because that shape
+ * genuinely is unknown to this build.
+ *
+ * A missing quota normalizes to "nothing spent today", which is the generous
+ * reading. The alternative — treating an absent counter as exhausted — would
+ * silently switch the tutor off for every existing profile on upgrade.
  */
 export function migrate(raw: unknown): Profile {
   if (!raw || typeof raw !== "object") return emptyProfile();
@@ -129,6 +138,7 @@ export function migrate(raw: unknown): Profile {
     sessions: candidate.sessions ?? 0,
     lastSessionAt: candidate.lastSessionAt ?? null,
     avatar: normalizeAvatar(candidate.avatar),
+    pauseQuota: normalizeQuota(candidate.pauseQuota),
   };
 }
 

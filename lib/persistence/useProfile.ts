@@ -5,6 +5,7 @@ import type { SessionState } from "../game/session";
 import { createStore, emptyProfile, type Profile, type Store } from "./store";
 import { mergeSession } from "./profile";
 import type { AvatarChoice } from "../game/avatar";
+import { spendPause } from "../tutor/quota";
 
 /**
  * Loads the durable profile once, then hands back a commit function for the
@@ -63,11 +64,41 @@ export function useProfile() {
     await store.saveProfile({ ...before, avatar });
   }, []);
 
+  /**
+   * Count one AI-tutored pause against today's quota.
+   *
+   * Optimistic locally so the UI can gate on it immediately, then reconciled
+   * against the stored profile — the same reload-first shape as the two
+   * writers above, because a session ending mid-pause must not roll the
+   * counter back and hand out a free pause.
+   */
+  const spendTutorPause = useCallback(async () => {
+    setProfile((current) => ({
+      ...current,
+      pauseQuota: spendPause(current.pauseQuota),
+    }));
+    const store = storeRef.current;
+    if (!store) return;
+    const before = await store.loadProfile();
+    await store.saveProfile({
+      ...before,
+      pauseQuota: spendPause(before.pauseQuota),
+    });
+  }, []);
+
   const exportEvents = useCallback(async () => {
     const store = storeRef.current;
     if (!store) return [];
     return store.readEvents();
   }, []);
 
-  return { profile, ready, durable, commitSession, saveAvatar, exportEvents };
+  return {
+    profile,
+    ready,
+    durable,
+    commitSession,
+    saveAvatar,
+    spendTutorPause,
+    exportEvents,
+  };
 }

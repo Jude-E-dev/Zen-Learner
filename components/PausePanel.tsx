@@ -2,21 +2,52 @@
 
 import { MathText } from "./MathText";
 import { MAX_HINT_RUNG, type SessionState } from "@/lib/game/session";
+import type { TutorStatus, TutorTurn } from "@/lib/tutor/useTutor";
 
 /**
- * The Socratic pause, authored-ladder version.
+ * The Socratic pause.
  *
- * There is no AI here and the product does not need one to work: the ladder is
- * human-written, exactly three rungs, and the reveal is the authored worked
- * solution. The AI layer that lands later only rephrases a rung against the
- * learner's specific mistake — if it is switched off, this is what remains, and
- * it has to be good on its own.
+ * There is an authored ladder underneath all of this and the product does not
+ * need an AI to work: the ladder is human-written, exactly three rungs, and
+ * the reveal is the authored worked solution. The tutor layer only rephrases
+ * the current rung against the learner's specific mistake — when it is off,
+ * unreachable, or out of quota, what remains is the ladder, and it has to be
+ * good on its own.
+ *
+ * That is why the tutored reply and the authored rung occupy the same slot
+ * rather than sitting in a separate "AI" box. A learner should not have to
+ * notice which one they got.
  */
-export function PausePanel({ state }: { state: SessionState }) {
+
+/** Why the ladder is standing in, in words a learner can act on. */
+const FALLBACK_NOTE: Record<string, string> = {
+  quota: "That's your five tutored pauses for today. The ladder still works.",
+  timeout: "The tutor took too long, so here's the authored hint.",
+  leak: "The tutor nearly gave it away, so here's the authored hint.",
+  "provider-error": "The tutor is unreachable, so here's the authored hint.",
+  // Not an error and not worth explaining: this is simply the app without a
+  // key, which is a supported way to run it.
+  "not-configured": "",
+};
+
+export function PausePanel({
+  state,
+  turn,
+  status,
+  remaining,
+}: {
+  state: SessionState;
+  turn: TutorTurn | null;
+  status: TutorStatus;
+  /** Tutored pauses left today, for the footer. */
+  remaining: number;
+}) {
   const q = state.current;
   if (!q) return null;
 
   const revealed = state.phase === "revealed";
+  const thinking = status === "thinking";
+  const note = turn?.authored ? (FALLBACK_NOTE[turn.reason ?? ""] ?? "") : "";
 
   return (
     <section className="anim-quiet pixel-frame-hot bg-ink-soft p-5">
@@ -50,27 +81,72 @@ export function PausePanel({ state }: { state: SessionState }) {
       ) : (
         <div className="flex flex-col gap-4">
           {/* Only rungs already reached, so the ladder can't be skipped ahead. */}
-          {q.hints.slice(0, state.hintRung).map((hint, i) => (
-            <div
-              key={i}
-              className={`flex gap-3 ${i === state.hintRung - 1 ? "" : "opacity-45"}`}
-            >
+          {q.hints.slice(0, state.hintRung - 1).map((hint, i) => (
+            <div key={i} className="flex gap-3 opacity-45">
               <span className="text-jade-deep shrink-0 tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <MathText text={hint} className="leading-relaxed" />
             </div>
           ))}
+
+          {/*
+            The current rung: the tutor's words when it managed them, the
+            authored ones otherwise. While the request is in flight the row
+            holds its space and says so, so the panel does not jump when the
+            reply lands.
+          */}
+          <div className="flex gap-3">
+            <span className="text-jade-deep shrink-0 tabular-nums">
+              {String(state.hintRung).padStart(2, "0")}
+            </span>
+            {thinking ? (
+              <p
+                aria-live="polite"
+                className="text-paper-dim anim-quiet leading-relaxed"
+              >
+                The tutor is reading what you wrote…
+              </p>
+            ) : (
+              <MathText
+                text={turn?.text ?? q.hints[state.hintRung - 1]}
+                className="leading-relaxed"
+              />
+            )}
+          </div>
+
+          {note && !thinking && (
+            <p className="text-paper-dim border-ink-line border-l-2 pl-3 text-xs leading-relaxed">
+              {note}
+            </p>
+          )}
         </div>
       )}
 
-      <p className="text-paper-dim mt-5 border-t-2 border-ink-line pt-3 text-xs leading-relaxed">
-        {revealed
-          ? "Enter on an empty box to try it again — a correct answer still counts."
-          : state.hintRung >= MAX_HINT_RUNG
-            ? "Type an answer and press Enter, or press Enter on an empty box to see the whole solution."
-            : "Type an answer and press Enter, or press Enter on an empty box for the next nudge."}
-      </p>
+      <div className="text-paper-dim mt-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t-2 border-ink-line pt-3 text-xs leading-relaxed">
+        <p>
+          {revealed
+            ? "Enter on an empty box to try it again — a correct answer still counts."
+            : thinking
+              ? "One moment."
+              : state.hintRung >= MAX_HINT_RUNG
+                ? "Type an answer and press Enter, or press Enter on an empty box to see the whole solution."
+                : "Type an answer and press Enter, or press Enter on an empty box for the next nudge."}
+        </p>
+
+        {/*
+          The quota is shown while it still means something. Counting down from
+          five on the first pause of the day would read as a limit being
+          imposed; showing the last two reads as a heads-up.
+        */}
+        {!revealed && remaining <= 2 && (
+          <span className="text-label tracking-widest">
+            {remaining === 0
+              ? "AUTHORED HINTS ONLY TODAY"
+              : `${remaining} TUTORED ${remaining === 1 ? "PAUSE" : "PAUSES"} LEFT TODAY`}
+          </span>
+        )}
+      </div>
     </section>
   );
 }

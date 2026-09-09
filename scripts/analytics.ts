@@ -89,6 +89,33 @@ function report(data: AnalyticsReport): void {
     console.log(`    solution revealed ${data.pause.solutionsRevealed}×`);
   }
 
+  /*
+   * Not a hypothesis — a health check. The tutor is a feature, not the
+   * product, so this reports whether it worked rather than whether it helped;
+   * whether it helped is hypothesis 1 above, and the ladder answers that
+   * whether or not a model was involved.
+   */
+  if (data.tutor.attempted > 0) {
+    const pct = (n: number) => `${Math.round((n / data.tutor.attempted) * 100)}%`;
+    console.log(
+      `\n  Tutor asked ${data.tutor.attempted}× · replied ${data.tutor.replied} (${pct(data.tutor.replied)}) · ` +
+        `fell back ${data.tutor.fellBack} (${pct(data.tutor.fellBack)})`,
+    );
+    if (data.tutor.retried > 0) {
+      console.log(
+        `    ${data.tutor.retried} repl${data.tutor.retried === 1 ? "y" : "ies"} needed the temperature-0 retry first`,
+      );
+    }
+    const reasons = Object.entries(data.tutor.byReason).sort(([, a], [, b]) => b - a);
+    if (reasons.length > 0) {
+      const max = Math.max(...reasons.map(([, count]) => count));
+      console.log("    why it fell back:");
+      for (const [reason, count] of reasons) {
+        console.log(`      ${reason.padEnd(16)}${String(count).padStart(3)}  ${bar(count, max)}`);
+      }
+    }
+  }
+
   heading("HYPOTHESIS 2 — does the loop survive its own novelty?");
 
   if (data.sessions.length === 0) {

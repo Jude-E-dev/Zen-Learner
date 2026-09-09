@@ -40,6 +40,26 @@ export interface RetryRates {
   unaided: { attempts: number; correct: number };
 }
 
+/**
+ * How the tutor layer actually behaved.
+ *
+ * Fallback rate is the headline quality metric (design doc #12): it is the
+ * fraction of tutored turns that ended on the authored ladder instead. The
+ * reasons are kept apart because they call for opposite responses — `leak`
+ * means the prompt needs work, `provider-error` and `timeout` mean the network
+ * does, and `quota` means the limit is set too low for how people actually
+ * play. Collapsed into one number, none of that is visible.
+ */
+export interface TutorReport {
+  /** Turns where the tutor was asked at all. */
+  attempted: number;
+  replied: number;
+  /** Replies whose first draft leaked and whose retry stood in. */
+  retried: number;
+  fellBack: number;
+  byReason: Record<string, number>;
+}
+
 export interface PauseReport {
   invoked: number;
   /** Pauses where the learner then attempted the question again. */
@@ -69,6 +89,7 @@ export interface AnalyticsReport {
   skipped: number;
   sessions: SessionSummary[];
   pause: PauseReport;
+  tutor: TutorReport;
   retention: RetentionReport;
   notes: string[];
 }
@@ -196,6 +217,28 @@ function servingsIn(events: GameEvent[]): Serving[] {
   return servings;
 }
 
+function analyseTutor(bySession: Map<number, GameEvent[]>): TutorReport {
+  const byReason: Record<string, number> = {};
+  let replied = 0;
+  let retried = 0;
+  let fellBack = 0;
+
+  for (const events of bySession.values()) {
+    for (const event of events) {
+      if (event.type === "tutor_replied") {
+        replied += 1;
+        if (event.retried) retried += 1;
+      }
+      if (event.type === "tutor_fallback") {
+        fellBack += 1;
+        byReason[event.reason] = (byReason[event.reason] ?? 0) + 1;
+      }
+    }
+  }
+
+  return { attempted: replied + fellBack, replied, retried, fellBack, byReason };
+}
+
 function analysePauses(bySession: Map<number, GameEvent[]>): PauseReport {
   const retries: RetryRates = {
     afterPause: { attempts: 0, correct: 0 },
@@ -259,6 +302,7 @@ export function buildReport(rows: Row[], skipped = 0): AnalyticsReport {
     .map(([session, events]) => summariseSession(session, events));
 
   const pause = analysePauses(bySession);
+  const tutor = analyseTutor(bySession);
 
   const retention: RetentionReport = {
     sessions: sessions.length,
@@ -290,7 +334,25 @@ export function buildReport(rows: Row[], skipped = 0): AnalyticsReport {
     );
   }
 
-  return { rows: rows.length, skipped, sessions, pause, retention, notes };
+  /*
+   * A fallback rate this high means the tutor is not doing its job, whatever
+   * the reason. Worth saying out loud in the report rather than leaving to be
+   * noticed in a ratio.
+   */
+  if (tutor.attempted >= 10 && tutor.fellBack / tutor.attempted > 0.2) {
+    const reasons = Object.entries(tutor.byReason)
+      .sort(([, a], [, b]) => b - a)
+      .map(([reason, count]) => `${reason} ${count}`)
+      .join(", ");
+    notes.push(
+      `${Math.round((tutor.fellBack / tutor.attempted) * 100)}% of tutored turns fell back to the authored ladder (${reasons}).`,
+    );
+  }
+  if (tutor.attempted === 0 && pause.invoked > 0) {
+    notes.push("Pauses were invoked but the tutor was never asked — running without a key.");
+  }
+
+  return { rows: rows.length, skipped, sessions, pause, tutor, retention, notes };
 }
 
 export function rate(part: { attempts: number; correct: number }): number | null {

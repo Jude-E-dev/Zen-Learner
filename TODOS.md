@@ -37,6 +37,84 @@ and invisible to every correctness test. Do not delete that block.
 - Tier 5 tops out around `41 × 25`. If that stops being a stretch, the ceiling needs
   raising rather than the range widening.
 
+## Tutor layer (stage 5) — shipped and verified 2026-09-09
+
+The constrained tutor: `/api/tutor`, the leak validator, the daily quota, the eval
+suite, and the pause UI that consumes them. Run against the live model; the numbers
+below are measured, not projected.
+
+**How it fits:** the authored ladder was already load-bearing and stays that way. The
+tutor rewrites the *current* rung against the mistake just made, and every failure path
+— no key, no quota, a leak, a timeout, a provider error — resolves to that same authored
+rung in the same slot. `PausePanel` has no "AI" box; a learner should not have to notice
+which one they got. Pulling `ANTHROPIC_API_KEY` out leaves the app fully playable.
+
+**Eval results** (22 fixtures, `pnpm eval:tutor`, ~$0.017 a run):
+
+| | leak | shape | rung | addresses | clean |
+|---|---|---|---|---|---|
+| first run | 9 | 2 | 2 | 6 | 8/22 |
+| after fixes | 0 | 2 | 3 | 3 | 14/22 |
+
+`--save=f.json` keeps the replies and `--replay=f.json` re-checks them for free. Use it:
+the replies are the expensive half and they do not change when a check does, so tuning
+the validator against a saved run costs nothing and holds the model fixed while the
+checker moves — which is the only way to tell a real fix from a lucky sample.
+
+**What the live run found that no amount of unit testing would have:**
+
+- **The rung-3 branch described a turn the app never takes.** `buildUserMessage` handed
+  the model the entire worked solution at rung 3 and asked it to walk through it. But
+  `advanceHint` moves *past* rung 3 into the `revealed` phase, which renders the authored
+  solution directly and never calls the model. The branch produced both of the run's
+  outright answer leaks — a walkthrough narrating its way to `1 - (-1)` and to `e`.
+  Deleted; rung 3 is now the last hint, same two-sentence shape as the others.
+- **"Unparseable ⇒ suspect" fired on ~40% of well-behaved replies.** Ordinary maths prose
+  is full of things that do not parse: `1^\infty`, `0/0`, `dy/dx`, a quoted `x^2 - 4`
+  from the question itself. Every one meant a retry and then a fallback, so the safety
+  net was switching the tutor off rather than guarding it. `couldBeTheAnswer` now gates
+  suspicion on whether a fragment *could* be the answer — it rules out quoted problem
+  text, Leibniz notation, prime notation, unbalanced-paren artifacts, type mismatches,
+  and fragments naming symbols the answer never mentions.
+- **Two detection holes, both pre-existing and both severe.** The scanner required a
+  digit, so every digit-free answer (`-x/y`, `ln(ln(x))`, `-tan(x)`) was invisible in
+  plain prose; and it tokenised on characters excluding spaces, so a multi-term answer
+  like `x*e^x - e^x` was only ever seen in halves. "So you get -x/y." read as clean.
+  Fixed, and `leak.test.ts` now checks all 30 answers across 4 phrasings — 120/120,
+  up from 109/120.
+
+**Three things the build order surfaced that the plan had wrong:**
+
+- **Caching the system prompt is a no-op.** The prompt measures ~369 tokens; the minimum
+  cacheable prefix is 512 on Opus 5, 1024 on Sonnet 5, 4096 on Haiku 4.5. Below the floor
+  a `cache_control` marker is accepted and silently does nothing. `cachingApplies()`
+  re-answers this automatically if the prompt grows or a floor moves.
+- **Opus 5 does not fit the ceiling.** A pause is up to 3 requests, ~$0.039 against the
+  $0.03 ceiling. Its rate card was removed rather than left as a selectable option that
+  quietly violates constraint #4. Measured spend is ~$0.0008 per request on Haiku.
+- **The quota counts pauses, not requests.** Charging per rung would have turned a
+  five-pause allowance into roughly one and a half.
+
+**Still open:**
+- **Two shape failures persist:** the model occasionally makes a statement where the
+  prompt asks for exactly one question. Harmless in itself — the reply is still a good
+  hint — but it is the clearest remaining prompt-adherence gap and the cheapest thing to
+  hill-climb next.
+- **`rung` and `addresses` are heuristics and warn rather than fail.** Word-overlap
+  proxies for semantic questions; `addresses` misses a reply that speaks to the mistake
+  in different words. A stricter version means an LLM judge, which the design doc
+  rejected on cost. The 3 remaining `addresses` warnings were all read and are fine.
+- **The leak validator still cannot catch a leak stated purely in prose** with no
+  extractable fragment. Unchanged from the design doc, which handles it by prevention
+  plus eval fixtures.
+- **No origin or shared-secret protection is configured, and no provider spend cap.**
+  The route honours `ZEN_TUTOR_ORIGIN` and `ZEN_TUTOR_SHARED_SECRET` but both are unset,
+  so the checks are no-ops today. They matter at deploy, and the real bound on loss is
+  the spend cap, which must be set in the provider console before this goes public.
+- **The pause UI has not been exercised in a browser.** The route and the checks are
+  verified; nobody has watched the world quiet down, the input lock, or the quota message
+  in an actual session.
+
 ## Cap or rotate the analytics event store
 
 **What:** Add a size cap or rotation policy to the IndexedDB analytics event store.

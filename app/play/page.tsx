@@ -16,11 +16,14 @@ import {
   dismissNotationHelp,
   endSession,
   invokePause,
+  recordEvent,
   resumeFromPause,
   startSession,
   submitAnswer,
   type SessionState,
 } from "@/lib/game/session";
+import { useTutor } from "@/lib/tutor/useTutor";
+import { remainingPauses, hasQuota } from "@/lib/tutor/quota";
 import { rankFor } from "@/lib/game/ranks";
 import { useProfile } from "@/lib/persistence/useProfile";
 import { ArmouryPanel } from "@/components/ArmouryPanel";
@@ -60,7 +63,27 @@ function Play() {
   const [state, setState] = useState<SessionState>(() => startSession(pool));
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { profile, durable, commitSession, saveAvatar, exportEvents } = useProfile();
+  const { profile, durable, commitSession, saveAvatar, spendTutorPause, exportEvents } =
+    useProfile();
+  const tutor = useTutor();
+  /*
+   * The mistake the tutor is answering.
+   *
+   * invokePause clears lastResult — the pause is not a verdict screen — so the
+   * wrong answer and the misconception it matched have to be caught on the way
+   * past, while they still exist.
+   */
+  const lastMistake = useRef<{ answer: string; misconceptionId?: string }>({
+    answer: "",
+  });
+  /*
+   * Whether the pause currently open paid for a tutor.
+   *
+   * The quota gate fires once, on the way in, so rungs 2 and 3 have no gate of
+   * their own — without this they would happily call the model inside a pause
+   * that was denied one, which is the quota leaking by the back door.
+   */
+  const pauseTutored = useRef(false);
   const committed = useRef<SessionState | null>(null);
   const router = useRouter();
   /*
@@ -71,10 +94,15 @@ function Play() {
   const [armoury, setArmoury] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Focus follows the loop, so typing always lands somewhere useful.
+  // Focus follows the loop, so typing always lands somewhere useful. The
+  // tutor's status is a dependency because a disabled input drops focus, and
+  // without this the learner would have to click back into the box every time
+  // a reply landed.
   useEffect(() => {
-    if (state.phase !== "summary" && !armoury) inputRef.current?.focus();
-  }, [state.phase, state.current?.id, armoury]);
+    if (state.phase !== "summary" && !armoury && tutor.status !== "thinking") {
+      inputRef.current?.focus();
+    }
+  }, [state.phase, state.current?.id, armoury, tutor.status]);
 
   // Persist once, when the session actually ends.
   useEffect(() => {
@@ -212,9 +240,91 @@ function Play() {
     return () => clearTimeout(timer);
   }, [state.lastResult]);
 
+  /**
+   * Ask the tutor for one rung, and resolve it however it resolves.
+   *
+   * The quota counts *pauses*, not requests. One pause is up to three rungs
+   * and therefore up to three requests, all of them paid for by the single
+   * unit spent on the way in — which is why the gate is only consulted at
+   * rung 1. Charging per rung would turn a five-pause allowance into
+   * something closer to one and a half.
+   *
+   * It is spent before the request rather than after it: a reply that arrives
+   * costs the same as one that times out, and counting only useful answers
+   * would let an unlucky session run past its budget indefinitely. Everything
+   * that is not a tutored reply lands on the authored rung, so this always
+   * ends with something on screen.
+   */
+  async function askTutor(next: SessionState, rung: number) {
+    const question = next.current;
+    if (!question) return;
+    const authoredHint = question.hints[rung - 1];
+    // A pause always opens on rung 1, so this is exactly "entering a pause".
+    const entering = rung === 1;
+
+    if (entering) pauseTutored.current = hasQuota(profile.pauseQuota);
+
+    if (!pauseTutored.current) {
+      tutor.showAuthored(authoredHint, "quota");
+      setState(
+        recordEvent(next, {
+          type: "tutor_fallback",
+          ts: Date.now(),
+          questionId: question.id,
+          rung,
+          reason: "quota",
+        }),
+      );
+      return;
+    }
+
+    /*
+     * A pause that opened without quota never gets here, and one that opened
+     * with it has already paid — so later rungs ask without spending again.
+     */
+    if (entering) void spendTutorPause();
+    const turn = await tutor.ask({
+      question,
+      rung,
+      wrongAnswer: lastMistake.current.answer,
+      misconceptionId: lastMistake.current.misconceptionId,
+      authoredHint,
+    });
+
+    // Log against the state this rung belongs to, not whatever the learner has
+    // done since — the ordering is what makes "did the pause unstick them"
+    // readable in the log.
+    setState((current) =>
+      recordEvent(
+        current,
+        turn.authored
+          ? {
+              type: "tutor_fallback",
+              ts: Date.now(),
+              questionId: question.id,
+              rung,
+              reason: turn.reason ?? "provider-error",
+            }
+          : {
+              type: "tutor_replied",
+              ts: Date.now(),
+              questionId: question.id,
+              rung,
+              retried: turn.retried ?? false,
+            },
+      ),
+    );
+  }
+
   function grade(from: SessionState, answer: string) {
     const before = from.lastAward?.seq ?? 0;
     const graded = submitAnswer(from, answer, pool);
+    if (graded.lastResult?.verdict === "incorrect") {
+      lastMistake.current = {
+        answer,
+        misconceptionId: graded.lastResult.misconceptionId,
+      };
+    }
     setState(graded);
     // A correct answer has already advanced the stream; clear the box for the
     // question that is now on screen. A wrong one keeps the text so it can be
@@ -227,12 +337,26 @@ function Play() {
     const answer = input;
     const empty = answer.trim() === "";
 
+    // A request in flight owns the box. Submitting again would spend a second
+    // pause on the same rung and race two replies into the same slot.
+    if (tutor.status === "thinking") return;
+
     // Inside the pause an empty Enter walks the ladder; a real answer leaves it.
     if (state.phase === "paused" || state.phase === "revealed") {
       if (empty) {
-        setState(state.phase === "paused" ? advanceHint(state) : resumeFromPause(state));
+        if (state.phase !== "paused") {
+          tutor.reset();
+          setState(resumeFromPause(state));
+          return;
+        }
+        const walked = advanceHint(state);
+        setState(walked);
+        // The reveal is authored prose, not a tutored turn — nothing to ask.
+        if (walked.phase === "paused") void askTutor(walked, walked.hintRung);
+        else tutor.reset();
         return;
       }
+      tutor.reset();
       grade(resumeFromPause(state), answer);
       return;
     }
@@ -256,13 +380,16 @@ function Play() {
     }
     if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
-      if (state.phase === "grinding") {
-        setState(invokePause(state, state.pauseOffered ? "offered" : "manual"));
+      if (state.phase === "grinding" && tutor.status !== "thinking") {
+        const paused = invokePause(state, state.pauseOffered ? "offered" : "manual");
+        setState(paused);
+        void askTutor(paused, paused.hintRung);
       }
       return;
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      tutor.reset();
       setState(endSession(state));
     }
   }
@@ -462,7 +589,12 @@ function Play() {
                 note="ESC TO CLOSE · YOUR STREAK IS SAFE"
               />
             ) : (
-              <PausePanel state={state} />
+              <PausePanel
+                state={state}
+                turn={tutor.turn}
+                status={tutor.status}
+                remaining={remainingPauses(profile.pauseQuota)}
+              />
             )}
           </div>
         )}
@@ -480,8 +612,21 @@ function Play() {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder={inPause ? "Answer, or Enter alone to go on" : "Your answer"}
-          className="focus-ring pixel-frame text-paper bg-ink px-4 py-3 text-lg placeholder:text-paper-dim/60 focus:border-jade-deep"
+          /*
+            Locked while the tutor is being asked (design doc, latency
+            treatment): a double-submit would spend twice and count twice
+            against a five-a-day quota for one question. Disabled rather than
+            readonly, so the cursor and the styling both say so.
+          */
+          disabled={tutor.status === "thinking"}
+          placeholder={
+            tutor.status === "thinking"
+              ? "…"
+              : inPause
+                ? "Answer, or Enter alone to go on"
+                : "Your answer"
+          }
+          className="focus-ring pixel-frame text-paper bg-ink px-4 py-3 text-lg placeholder:text-paper-dim/60 focus:border-jade-deep disabled:opacity-50"
         />
 
         <div aria-live="polite" className="min-h-[1.5rem] text-sm">

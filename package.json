@@ -10,9 +10,11 @@
     "validate:content": "tsx scripts/validate-content.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "analytics": "tsx scripts/analytics.ts"
+    "analytics": "tsx scripts/analytics.ts",
+    "eval:tutor": "tsx --env-file=.env.local scripts/eval-tutor.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "idb": "latest",
     "katex": "latest",
     "mathjs": "latest",
