@@ -364,19 +364,34 @@ export function Dojo({
   return (
     <div
       /*
-        The wall colour, not the page's, so the band left over when the room is
-        taller than its 3:1 art reads as ceiling rather than as a seam. The
-        token is sampled from the top visible row of hall.png, so the band
-        continues the art's ceiling shadow instead of butting against it.
+        The outer box takes whatever height the column gives it and paints
+        nothing. The room inside it is capped to the art's own 288x115, which
+        is the ratio at which the art fills its frame exactly — the scene is
+        96 units tall inside a 115-row image, and the 19 rows left over are
+        precisely the ceiling that hangs above the viewBox.
+
+        Before this, the box was the room: on a 375px phone it ran 1.5:1
+        against art that is 2.5:1, and 84 of its 218 pixels — 38% of the hall
+        — were flat `hall-wall`. That was tolerable while the room was drawn
+        in the same flat colours; against a lit raster it read as a maroon
+        slab sitting on top of the room. Any leftover height now falls outside
+        the frame and shows the page, which is the ground everything else on
+        the page already sits on.
       */
-      className={`bg-hall-wall relative w-full overflow-hidden ${className}`}
+      className={`relative flex w-full items-end justify-center overflow-hidden ${className}`}
       data-testid="dojo"
     >
       <svg
         viewBox="0 0 288 96"
         preserveAspectRatio="xMidYMax meet"
         shapeRendering="crispEdges"
-        className={`h-full w-full transition-opacity duration-300 ${
+        /*
+          `max-h-full` is what keeps the wide case working: on the home page
+          the container is nearer 7:1, the aspect ratio would ask for a box
+          taller than there is room for, and the clamp hands the width back to
+          the mirrored copies that continue the room sideways.
+        */
+        className={`bg-hall-wall aspect-[288/115] max-h-full w-full transition-opacity duration-300 ${
           quiet ? "opacity-35" : "opacity-100"
         }`}
         aria-hidden
