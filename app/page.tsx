@@ -119,7 +119,19 @@ export default function TopicSelect() {
               return (
                 <div
                   key={drill.id}
-                  className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-2 p-4 transition-colors ${
+                  /*
+                    Stacked below `sm`, a row above it.
+
+                    As a row at every width it was a row at 375px too, and the
+                    action group is `shrink-0` while the text column is
+                    `flex-1 min-w-0` — so the button kept its 150px and the
+                    text was handed the 89px left over. Both blurbs rendered
+                    at eleven characters a line, six and seven lines deep,
+                    against a 45-75 target; the subtopic list ran fourteen
+                    lines. The column that shrinks is the one carrying the
+                    prose.
+                  */
+                  className={`flex flex-col items-stretch gap-4 border-2 p-4 transition-colors sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:gap-y-3 ${
                     active ? "border-jade-deep bg-ink" : "border-ink-line"
                   }`}
                 >
@@ -161,7 +173,10 @@ export default function TopicSelect() {
                       onFocus={() => setChosen(drill)}
                       onMouseEnter={() => setChosen(drill)}
                       autoFocus={active}
-                      className="focus-ring pixel-frame-hot text-jade bg-ink px-6 py-3 text-base tracking-[0.2em] hover:bg-ink-soft"
+                      /* Full width while the row is stacked, so the primary
+                         action is the full-width thing it is everywhere else
+                         on a phone rather than a 150px tab floating left. */
+                      className="focus-ring pixel-frame-hot text-jade bg-ink w-full px-6 py-3 text-base tracking-[0.2em] hover:bg-ink-soft sm:w-auto"
                     >
                       {returning ? "CONTINUE ▸" : "BEGIN ▸"}
                     </button>
