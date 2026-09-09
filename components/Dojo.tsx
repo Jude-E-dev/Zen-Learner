@@ -289,6 +289,59 @@ const POST = [
 ];
 
 
+/**
+ * Text drawn inside the scene, over the art.
+ *
+ * Every one of these used to be a bare `<text>`, which was fine while the room
+ * was flat dark rects: gold on near-black reads at any size. Against the
+ * raster the combo caption — a muted gold at 6px — landed on lit floorboards
+ * of almost exactly its own value and became unreadable, and the XP number
+ * crosses the torii and the shoji as it flies.
+ *
+ * So: a hard one-pixel shadow, offset and unblurred, which is what 16-bit
+ * games did for exactly this reason and is the only kind of depth the rest of
+ * this app allows. It costs one extra `<text>` per label and works over any
+ * background the art can put underneath it.
+ *
+ * The caption also moves from `hall-lamp-case-dim` to `gold`: the dim tone was
+ * chosen to sit quietly on a dark wall, and there is no dark wall any more.
+ */
+function SceneText({
+  x,
+  y,
+  size,
+  fill,
+  anchor = "end",
+  letterSpacing,
+  children,
+}: {
+  x: number;
+  y: number;
+  size: number;
+  fill: string;
+  anchor?: "start" | "middle" | "end";
+  letterSpacing?: number;
+  children: React.ReactNode;
+}) {
+  const shared = {
+    textAnchor: anchor,
+    fontSize: size,
+    letterSpacing,
+    fontFamily: "ui-monospace, monospace",
+  } as const;
+
+  return (
+    <>
+      <text x={x + 1} y={y + 1} {...shared} fill="var(--color-ink)" opacity={0.85}>
+        {children}
+      </text>
+      <text x={x} y={y} {...shared} fill={fill}>
+        {children}
+      </text>
+    </>
+  );
+}
+
 /** One art pixel per viewBox unit. `.` is transparent. */
 export function PixelArt({
   map,
@@ -556,16 +609,9 @@ export function Dojo({
         */}
         {award && !quiet && (
           <g key={award.seq} className="anim-hit-scene">
-            <text
-              x="171"
-              y="26"
-              textAnchor="middle"
-              fill="var(--color-jade)"
-              fontSize="15"
-              fontFamily="ui-monospace, monospace"
-            >
+            <SceneText x={171} y={26} size={15} fill="var(--color-jade)" anchor="middle">
               +{award.xp}
-            </text>
+            </SceneText>
           </g>
         )}
 
@@ -573,27 +619,18 @@ export function Dojo({
             drifted away from the art when the viewBox letterboxed. */}
         {combo >= 3 && !quiet && (
           <g>
-            <text
-              x="282"
-              y="68"
-              textAnchor="end"
-              fill="var(--color-gold)"
-              fontSize="18"
-              fontFamily="ui-monospace, monospace"
-            >
+            <SceneText x={282} y={68} size={18} fill="var(--color-gold)">
               {combo}
-            </text>
-            <text
-              x="282"
-              y="76"
-              textAnchor="end"
-              fill="var(--color-hall-lamp-case-dim)"
-              fontSize="6"
-              letterSpacing="1"
-              fontFamily="ui-monospace, monospace"
+            </SceneText>
+            <SceneText
+              x={282}
+              y={76}
+              size={6}
+              fill="var(--color-gold)"
+              letterSpacing={1}
             >
               {combo >= 10 ? "UNBROKEN" : combo >= 5 ? "SHARP" : "COMBO"}
-            </text>
+            </SceneText>
           </g>
         )}
       </svg>
