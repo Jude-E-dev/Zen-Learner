@@ -474,7 +474,14 @@ function Play() {
 
   const result = state.lastResult;
   const showMiss = result?.verdict === "incorrect";
-  const showUnreadable = result?.verdict === "unreadable";
+  /*
+   * Two ways to submit nothing scorable, and they need different words. A
+   * mental-maths learner who types `31*20` back has not made a notation
+   * mistake, so "I couldn't read that" would be both wrong and confusing —
+   * the app read it fine.
+   */
+  const showNeedsEvaluation = result?.needsEvaluation === true;
+  const showUnreadable = result?.verdict === "unreadable" && !showNeedsEvaluation;
   const inPause = state.phase === "paused" || state.phase === "revealed";
   // The armoury and the hint ladder both take the room's space and both want
   // the scene quiet behind them.
@@ -554,7 +561,7 @@ function Play() {
       {/* The room fills whatever is left. When the pause opens it shrinks to a
           strip and dims, so the world stays present while the ladder gets the
           space — the grind quieting down, rather than being replaced. */}
-      <div className="flex min-h-0 grow flex-col gap-4">
+      <div className="flex grow flex-col gap-4">
         {state.showNotationHelp && (
           <NotationHelp onDismiss={() => setState(dismissNotationHelp(state))} />
         )}
@@ -579,7 +586,18 @@ function Play() {
         />
 
         {panelOpen && (
-          <div className="min-h-0 grow overflow-y-auto">
+          /*
+            The panel takes its natural height and lets the page scroll, rather
+            than scrolling inside itself.
+
+            It used to be `min-h-0 grow overflow-y-auto`, a second scroll
+            container nested inside main's. On a 720px laptop that left 146px
+            for 183px of panel: the last 37px — the line telling you to press
+            Enter for the next rung, and the quota notice under it — were cut
+            off, inside an inner scroll nothing indicated was there. The
+            instructions for using the pause were the part the pause hid.
+          */
+          <div className="shrink-0">
             {armoury ? (
               <ArmouryPanel
                 choice={profile.avatar}
@@ -637,6 +655,14 @@ function Play() {
                 {state.pauseOffered
                   ? "Try again, or Shift+Enter and we'll work through it."
                   : "Have another go."}
+              </span>
+            </span>
+          )}
+          {showNeedsEvaluation && (
+            <span className="text-gold">
+              That&apos;s the question, not the answer.{" "}
+              <span className="text-paper-dim">
+                Nothing scored — work it out and type the number.
               </span>
             </span>
           )}

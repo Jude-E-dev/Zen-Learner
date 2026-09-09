@@ -283,3 +283,60 @@ describe("mental math — the ladder is worth climbing", () => {
     }
   });
 });
+
+/**
+ * The drill is the arithmetic, so the arithmetic has to be done.
+ *
+ * The checker grades by numeric behaviour, which is right for calculus and
+ * was catastrophic here: `31*20` evaluates to 620 and was scored correct for
+ * `31 × 20`. Every question in the drill was answerable by retyping it, so
+ * XP, ranks and mastery were all reachable without doing any mental maths at
+ * all. This block is what keeps that shut.
+ */
+describe("mental math — the sum is not an answer", () => {
+  /** The prompt as a learner would retype it, in ASCII. */
+  function asTyped(prompt: string): string | null {
+    const square = prompt.match(/^(\d+)²$/);
+    if (square) return `${square[1]}^2`;
+
+    const percent = prompt.match(/^(\d+)% of (\d+)$/);
+    if (percent) return `${percent[2]} * ${percent[1]} / 100`;
+
+    const binary = prompt.match(/^(\d+) ([+−×÷]) (\d+)$/);
+    if (!binary) return null;
+    const op = { "+": "+", "−": "-", "×": "*", "÷": "/" }[binary[2]]!;
+    return `${binary[1]} ${op} ${binary[3]}`;
+  }
+
+  it("handing the question back is never scored as correct", () => {
+    for (const q of wide.slice(0, 300)) {
+      const typed = asTyped(q.prompt);
+      expect(typed, `no ASCII form for "${q.prompt}"`).not.toBeNull();
+      const result = checkAnswer(typed!, q);
+      expect(result.verdict, `"${typed}" for "${q.prompt}"`).toBe("unreadable");
+      expect(result.needsEvaluation, `"${typed}" for "${q.prompt}"`).toBe(true);
+    }
+  });
+
+  it("nor is any other unevaluated route to the right number", () => {
+    const q = wide[0];
+    const answer = Number(q.canonicalAnswer);
+    for (const input of [`${answer} + 0`, `${answer + 1} - 1`, `${answer * 2} / 2`]) {
+      expect(checkAnswer(input, q).needsEvaluation, input).toBe(true);
+    }
+  });
+
+  it("still takes the number in the forms people actually type it", () => {
+    const q = wide.find((x) => Number(x.canonicalAnswer) > 0)!;
+    const answer = q.canonicalAnswer;
+    for (const input of [answer, ` ${answer} `, `(${answer})`, `${answer}.0`]) {
+      expect(checkAnswer(input, q).verdict, input).toBe("correct");
+    }
+  });
+
+  it("leaves the calculus bank alone — 3/3 is still a fine way to say 1", () => {
+    // The flag is per question, not global. Nothing in the authored bank sets
+    // it, and this is the behaviour that must not regress.
+    expect(wide.every((q) => q.requireEvaluated)).toBe(true);
+  });
+});

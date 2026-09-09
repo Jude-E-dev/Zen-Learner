@@ -460,6 +460,13 @@ function toQuestion(spec: Spec, tier: number, index: number): Question {
     variables: [],
     canonicalAnswer: String(spec.answer),
     acceptedForms: [],
+    /*
+     * The whole drill is the arithmetic, so the arithmetic has to be done.
+     * Without this the checker — which grades by behaviour, correctly, for
+     * calculus — accepted `31*20` for `31 × 20`: numerically identical to
+     * 620 and worth nothing at all as mental maths.
+     */
+    requireEvaluated: true,
     workedSolution: spec.steps,
     hints: spec.hints,
     misconceptions,

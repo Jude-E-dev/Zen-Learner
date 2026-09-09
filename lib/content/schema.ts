@@ -68,6 +68,19 @@ export const QuestionSchema = z.object({
    * validated as genuinely equivalent to canonicalAnswer where it can be.
    */
   acceptedForms: z.array(z.string().min(1)).default([]),
+  /**
+   * Does the learner have to *do* the arithmetic?
+   *
+   * The checker grades by behaviour, which is exactly right for calculus —
+   * `3/3` is a perfectly good way to say `1` and nobody should have to
+   * simplify to be marked correct. It is exactly wrong for a mental maths
+   * drill: `31*20` behaves identically to `620`, so typing the question back
+   * scored as a correct answer and the drill graded itself. Setting this
+   * demands an evaluated number and nudges anything else instead of scoring
+   * it, which is the honest verdict — restating the question is not a wrong
+   * answer, it is not an answer.
+   */
+  requireEvaluated: z.boolean().default(false),
   workedSolution: z
     .array(WorkedStepSchema)
     .min(2, "a worked solution needs at least two steps to be worth showing"),

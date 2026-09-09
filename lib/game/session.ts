@@ -158,7 +158,12 @@ export function submitAnswer(
   // Unreadable input is not an attempt. Nothing scores, nothing moves, and the
   // learner is offered help with notation rather than with calculus.
   if (result.verdict === "unreadable") {
-    const consecutiveUnreadable = state.consecutiveUnreadable + 1;
+    // Handing the sum back is not a notation problem, so it does not count
+    // toward the notation help. The learner knows how to type it; they have
+    // just not worked it out yet.
+    const consecutiveUnreadable = result.needsEvaluation
+      ? state.consecutiveUnreadable
+      : state.consecutiveUnreadable + 1;
     const showNotationHelp =
       consecutiveUnreadable >= NOTATION_HELP_AFTER_UNREADABLE;
     const events: GameEvent[] = [

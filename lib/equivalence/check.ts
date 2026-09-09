@@ -26,6 +26,8 @@ import { normalize, normalizedEqual } from "./normalize";
  *
  *                 input
  *                   |
+ *        [ requireEvaluated? ]------ unevaluated -------> unreadable(+nudge)
+ *                   |
  *          [ normalize + fast path ]---- exact match ----> correct
  *                   |
  *          [ string misconception ]----- match --------> incorrect(+id)
@@ -45,6 +47,12 @@ export interface CheckResult {
   verdict: Verdict;
   /** Set when an incorrect answer matched an authored misconception distractor. */
   misconceptionId?: string;
+  /**
+   * Set when the submission was the sum rather than its value, on a question
+   * that asks for the value. The UI says something different here: "I couldn't
+   * read that" is a lie when the input parsed perfectly.
+   */
+  needsEvaluation?: boolean;
   /** Human-readable rationale, surfaced in dev and in the event log. */
   reason: string;
 }
@@ -194,6 +202,37 @@ function numberCompare(a: MathNode, b: MathNode): Agreement {
   return closeEnough(va, vb) ? "agree" : "disagree";
 }
 
+/**
+ * Has this input been worked out, or is it still a sum?
+ *
+ * A plain number, optionally signed and optionally parenthesised — `620`,
+ * `-3`, `(41)`. Anything with an operator, a function or a symbol left in it
+ * is a calculation the learner has handed back rather than performed.
+ *
+ * Deliberately structural rather than a regex over the raw text: mathjs has
+ * already decided what the input *is*, and re-deciding it with a pattern is
+ * how the two answers drift apart.
+ */
+function isEvaluatedNumber(node: MathNode): boolean {
+  if (node.type === "ConstantNode") {
+    return typeof (node as unknown as { value: unknown }).value === "number";
+  }
+  if (node.type === "ParenthesisNode") {
+    return isEvaluatedNumber(
+      (node as unknown as { content: MathNode }).content,
+    );
+  }
+  if (node.type === "OperatorNode") {
+    const op = node as unknown as { fn: string; args: MathNode[] };
+    return (
+      (op.fn === "unaryMinus" || op.fn === "unaryPlus") &&
+      op.args.length === 1 &&
+      isEvaluatedNumber(op.args[0])
+    );
+  }
+  return false;
+}
+
 export interface CompareOptions {
   answerType: Question["answerType"];
   variables: string[];
@@ -261,6 +300,27 @@ export function checkAnswer(input: string, question: Question): CheckResult {
     answerType: question.answerType,
     variables: question.variables,
   };
+
+  /*
+   * Before anything is compared: on a drill that asks for the value, the sum
+   * itself is not an answer. This runs first because every path below would
+   * otherwise reward it — `31*20` agrees with `620` numerically, and a
+   * restated sum that lands on a distractor would be scored as that
+   * misconception, which it is not.
+   *
+   * Unparseable input falls through to the ordinary unreadable path; there is
+   * nothing useful to say about notation from here.
+   */
+  if (question.requireEvaluated) {
+    const node = tryParse(input);
+    if (node && !isEvaluatedNumber(node)) {
+      return {
+        verdict: "unreadable",
+        needsEvaluation: true,
+        reason: "restates the question instead of evaluating it",
+      };
+    }
+  }
 
   // Fast path: textually identical to the answer key or an accepted form.
   if (normalizedEqual(input, question.canonicalAnswer)) {
