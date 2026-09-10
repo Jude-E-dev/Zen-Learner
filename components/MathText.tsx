@@ -26,8 +26,10 @@ export function MathText({
         segment.math ? (
           <span
             key={i}
-            // KaTeX output is generated from authored content files, never from
-            // learner input or model output.
+            // Authored content and the tutor's live model reply both render
+            // through here, so renderMath() pins `trust: false` explicitly
+            // rather than relying on KaTeX's default — that's what keeps
+            // \href/\includegraphics-style injection out of model text.
             dangerouslySetInnerHTML={{ __html: renderMath(segment.value) }}
           />
         ) : (
@@ -71,7 +73,11 @@ function splitMath(text: string): Segment[] {
 
 function renderMath(tex: string): string {
   try {
-    return katex.renderToString(tex, { throwOnError: false, displayMode: false });
+    return katex.renderToString(tex, {
+      throwOnError: false,
+      displayMode: false,
+      trust: false,
+    });
   } catch {
     return tex;
   }
