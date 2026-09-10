@@ -5,6 +5,7 @@ import { rankFor, statsAtOrAbove } from "../game/ranks";
 import { emptyProfile, memoryStore, migrate, PROFILE_VERSION } from "./store";
 import { defaultAvatar } from "../game/avatar";
 import { mergeSession, toJsonl } from "./profile";
+import { localDay } from "../tutor/quota";
 
 const pool = loadAll().flatMap((f) => f.questions);
 
@@ -200,4 +201,37 @@ describe("migrate — upgrading a stored profile", () => {
       expect(migrate(input).totalXp).toBe(0);
     },
   );
+
+  /*
+   * Version 3 added the daily pause quota (design doc constraint #4). Same
+   * rule as the avatar: a profile from before it existed gets a generous
+   * default rather than being treated as exhausted, and a profile that already
+   * has one keeps it exactly rather than being re-derived.
+   */
+  it("gives a version 1 profile without a pauseQuota the generous default (nothing spent today)", () => {
+    const upgraded = migrate(v1);
+    expect(upgraded.pauseQuota.used).toBe(0);
+    expect(upgraded.pauseQuota.day).toBe(localDay());
+  });
+
+  it("gives a version 2 profile without a pauseQuota the same generous default", () => {
+    const v2 = { ...v1, version: 2, avatar: defaultAvatar() };
+    const upgraded = migrate(v2);
+    expect(upgraded.pauseQuota).toEqual({ day: localDay(), used: 0 });
+  });
+
+  it("keeps a version 3 profile's existing pauseQuota untouched", () => {
+    const stored = {
+      ...v1,
+      version: 3,
+      avatar: defaultAvatar(),
+      pauseQuota: { day: "2020-01-01", used: 3 },
+    };
+    expect(migrate(stored).pauseQuota).toEqual({ day: "2020-01-01", used: 3 });
+  });
+
+  it("repairs a pauseQuota of the wrong shape rather than crashing on it", () => {
+    const stored = { ...v1, version: 3, avatar: defaultAvatar(), pauseQuota: { used: -5 } };
+    expect(migrate(stored).pauseQuota).toEqual({ day: localDay(), used: 0 });
+  });
 });

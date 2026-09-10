@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { checkAnswer } from "./check";
 import { normalize } from "./normalize";
 import { loadAll } from "../content/load";
+import { generateMentalMath } from "../content/mental";
 import type { Question } from "../content/schema";
 
 const questions = new Map<string, Question>();
@@ -171,6 +172,52 @@ describe("checkAnswer — unreadable input is never scored as wrong", () => {
 
   it("treats an answer full of unknown symbols as unreadable", () => {
     expect(checkAnswer("banana", q("chain-rule-power")).verdict).toBe("unreadable");
+  });
+});
+
+/**
+ * The mental-math fix from commit 14979b1: the sum itself is not an answer.
+ * `requireEvaluated` questions must reject a restated calculation even though
+ * it is numerically identical to the canonical answer, and still grade a
+ * genuinely evaluated number normally.
+ */
+describe("checkAnswer — requireEvaluated rejects the sum, not just the wrong answer", () => {
+  const mm = generateMentalMath(2026, 5);
+  const addition = mm.find((q) => q.subtopic === "addition")!;
+  const multiplication = mm.find((q) => q.subtopic === "multiplication")!;
+
+  it("flags a restated sum as needing evaluation rather than scoring it", () => {
+    // The prompt is the unevaluated expression itself — e.g. "6 + 5" — which
+    // parses fine and would agree numerically with the canonical answer.
+    const result = checkAnswer(normalize(addition.prompt), addition);
+    expect(result.verdict).toBe("unreadable");
+    expect(result.needsEvaluation).toBe(true);
+  });
+
+  it("does the same for a restated multiplication, not just addition", () => {
+    const result = checkAnswer(normalize(multiplication.prompt), multiplication);
+    expect(result.verdict).toBe("unreadable");
+    expect(result.needsEvaluation).toBe(true);
+  });
+
+  it("grades a genuinely evaluated number normally", () => {
+    const result = checkAnswer(addition.canonicalAnswer, addition);
+    expect(result.verdict).toBe("correct");
+    expect(result.needsEvaluation).toBeUndefined();
+  });
+
+  it("still catches a genuinely wrong evaluated number as incorrect", () => {
+    const wrong = String(Number(addition.canonicalAnswer) + 100);
+    const result = checkAnswer(wrong, addition);
+    expect(result.verdict).toBe("incorrect");
+    expect(result.needsEvaluation).toBeUndefined();
+  });
+
+  it("does not require evaluation on ordinary calculus questions", () => {
+    // requireEvaluated defaults to false for the authored bank — restating
+    // work is fine there, since the checker grades by behaviour.
+    const calc = q("chain-rule-power");
+    expect(calc.requireEvaluated).toBe(false);
   });
 });
 

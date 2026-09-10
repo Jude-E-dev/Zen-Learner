@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { loadAll } from "../content/load";
+import { generateMentalMath } from "../content/mental";
 import type { Question } from "../content/schema";
+import { normalize } from "../equivalence/normalize";
 import {
   applyVerdict,
   initialSelector,
@@ -238,6 +240,35 @@ describe("session — unreadable input", () => {
     s = submitAnswer(s, "((", pool, 2_000);
     s = submitAnswer(s, "5(3x+1)^4", pool, 3_000);
     expect(s.consecutiveUnreadable).toBe(0);
+  });
+
+  /*
+   * The mental-math fix: a submission that parses fine but restates the sum
+   * (`needsEvaluation: true`) is not a notation problem, so it must not count
+   * toward the notation-help trigger the way genuinely unreadable input does.
+   */
+  it("does not count a submission that needs evaluation toward consecutiveUnreadable", () => {
+    const mm = generateMentalMath(99, 3).find((mq) => mq.subtopic === "addition")!;
+    let s: SessionState = { ...startSession(pool, 1_000), current: mm };
+    s = { ...s, selector: markServed(s.selector, mm.id) };
+
+    // The unevaluated sum itself: parses, needs evaluation, must not count.
+    s = submitAnswer(s, normalize(mm.prompt), pool, 2_000);
+    expect(s.lastResult?.needsEvaluation).toBe(true);
+    expect(s.consecutiveUnreadable).toBe(0);
+    expect(s.showNotationHelp).toBe(false);
+
+    // A second one, for good measure — still zero.
+    s = submitAnswer(s, normalize(mm.prompt), pool, 3_000);
+    expect(s.consecutiveUnreadable).toBe(0);
+    expect(s.showNotationHelp).toBe(false);
+
+    // Contrast: genuinely unreadable input on the same question does count,
+    // and after two of them notation help kicks in as usual.
+    s = submitAnswer(s, "((", pool, 4_000);
+    s = submitAnswer(s, "x +", pool, 5_000);
+    expect(s.consecutiveUnreadable).toBe(2);
+    expect(s.showNotationHelp).toBe(true);
   });
 
   it("clears notation help when dismissed", () => {

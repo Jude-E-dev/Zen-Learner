@@ -38,6 +38,26 @@ const pause = (questionId: string): GameEvent => ({
   trigger: "manual",
 });
 
+const tutorReplied = (questionId: string, rung: number, retried = false): GameEvent => ({
+  type: "tutor_replied",
+  ts: at(),
+  questionId,
+  rung,
+  retried,
+});
+
+const tutorFallback = (
+  questionId: string,
+  rung: number,
+  reason: "leak" | "timeout" | "provider-error" | "not-configured" | "quota",
+): GameEvent => ({
+  type: "tutor_fallback",
+  ts: at(),
+  questionId,
+  rung,
+  reason,
+});
+
 const pauseEnd = (questionId: string, durationMs: number, reachedRung: number): GameEvent => ({
   type: "pause_ended",
   ts: at(),
@@ -296,5 +316,86 @@ describe("the report's own honesty", () => {
   it("returns null rather than NaN for a rate with no attempts", () => {
     expect(rate({ attempts: 0, correct: 0 })).toBeNull();
     expect(rate({ attempts: 4, correct: 3 })).toBe(0.75);
+  });
+});
+
+describe("analyseTutor — how the tutor layer actually behaved", () => {
+  it("tallies replies, retries and fallbacks by reason across sessions", () => {
+    clock = 0;
+    const report = buildReport([
+      ...rows(1, [
+        tutorReplied("q1", 1, false),
+        tutorReplied("q2", 1, true),
+        tutorFallback("q3", 2, "leak"),
+      ]),
+      ...rows(2, [tutorFallback("q4", 1, "timeout"), tutorFallback("q5", 1, "leak")]),
+    ]);
+
+    expect(report.tutor).toEqual({
+      attempted: 5,
+      replied: 2,
+      retried: 1,
+      fellBack: 3,
+      byReason: { leak: 2, timeout: 1 },
+    });
+  });
+
+  it("reports zeroes rather than throwing when the tutor was never invoked", () => {
+    const report = buildReport(rows(1, [{ type: "session_start", ts: 0 }]));
+    expect(report.tutor).toEqual({
+      attempted: 0,
+      replied: 0,
+      retried: 0,
+      fellBack: 0,
+      byReason: {},
+    });
+  });
+
+  it("notes a high fallback rate once there are enough tutored turns to call it a rate", () => {
+    clock = 0;
+    // 10 attempted, 3 fell back — 30%, above the 20% threshold, and the
+    // attempted count clears the >= 10 floor the note requires.
+    const events: GameEvent[] = [
+      ...Array.from({ length: 7 }, (_, i) => tutorReplied(`q${i}`, 1)),
+      tutorFallback("qa", 1, "leak"),
+      tutorFallback("qb", 1, "leak"),
+      tutorFallback("qc", 1, "timeout"),
+    ];
+    const report = buildReport(rows(1, events));
+    expect(report.notes.join(" ")).toMatch(/30% of tutored turns fell back/);
+    expect(report.notes.join(" ")).toMatch(/leak 2/);
+    expect(report.notes.join(" ")).toMatch(/timeout 1/);
+  });
+
+  it("does not raise the fallback-rate note under ten attempts, even at 100%", () => {
+    clock = 0;
+    const report = buildReport(
+      rows(1, [tutorFallback("q1", 1, "leak"), tutorFallback("q2", 1, "leak")]),
+    );
+    expect(report.notes.join(" ")).not.toMatch(/fell back to the authored ladder/);
+  });
+
+  it("notes when pauses were invoked but the tutor was never asked", () => {
+    clock = 0;
+    const report = buildReport(
+      rows(1, [served("q1"), answer("q1", "incorrect"), pause("q1"), pauseEnd("q1", 10_000, 1)]),
+    );
+    expect(report.tutor.attempted).toBe(0);
+    expect(report.pause.invoked).toBe(1);
+    expect(report.notes.join(" ")).toMatch(/running without a key/);
+  });
+
+  it("does not raise the no-key note when the tutor was in fact asked", () => {
+    clock = 0;
+    const report = buildReport(
+      rows(1, [
+        served("q1"),
+        answer("q1", "incorrect"),
+        pause("q1"),
+        tutorReplied("q1", 1),
+        pauseEnd("q1", 10_000, 1),
+      ]),
+    );
+    expect(report.notes.join(" ")).not.toMatch(/running without a key/);
   });
 });
