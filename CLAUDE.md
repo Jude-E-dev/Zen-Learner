@@ -45,3 +45,7 @@ Key routing rules:
 - Save progress → invoke /context-save
 - Resume context → invoke /context-restore
 - Author a backlog-ready spec/issue → invoke /spec
+
+## Testing
+
+Run tests with `pnpm test` (vitest run). Test files live alongside source as `*.test.ts`.

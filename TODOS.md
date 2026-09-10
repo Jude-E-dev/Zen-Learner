@@ -1,10 +1,577 @@
 # TODOS
 
 Deferred work with enough context to pick up cold. Added by `/plan-eng-review` on 2026-09-07.
+Reorganized into gstack's skill/component + priority format by `/ship` on 2026-09-10 — content
+preserved verbatim, only the shape changed.
 
 ---
 
-## Mental math drill — shipped 2026-09-08
+## Mental Math
+
+### Promise a "no clock running" tagline where the clock actually doesn't run
+
+**What:** The home page tagline and the calculus card both used to promise "no clock running."
+The promise now lives on the calculus card only, where it is still true.
+
+**Why:** Mental math is timed, so the old blanket promise became false for that drill. Worth a
+second look if a third drill lands and the phrasing needs to generalize again.
+
+**Effort:** S
+**Priority:** P4
+**Depends on:** None
+
+### Give the mental-math clock a per-question time target
+
+**What:** No per-question time target exists, so "fast" is measured only against your own
+previous times.
+
+**Why:** A target-time band per tier would make the clock mean something on question one,
+instead of only becoming meaningful after a learner has a personal baseline.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** None
+
+### Reassess the tier 5 mental-math ceiling
+
+**What:** Tier 5 tops out around `41 × 25`.
+
+**Why:** If that stops being a stretch, the ceiling needs raising rather than the range
+widening — a note for whoever revisits tier balance.
+
+**Effort:** S
+**Priority:** P4
+**Depends on:** None
+
+---
+
+## Tutor
+
+### Watch the two remaining tutor shape warnings
+
+**What:** `rung` and `addresses` are heuristics and warn rather than fail. Word-overlap proxies
+for semantic questions; `addresses` misses a reply that speaks to the mistake in different
+words. The 3 `addresses` warnings from the 2026-09-09 eval run were all read and are fine.
+
+**Why:** A stricter version means an LLM judge, which the design doc rejected on cost. This is a
+known, accepted heuristic limit, not a bug — kept as a TODO so the tradeoff isn't re-litigated
+from scratch later.
+
+**Context:** The exactly-one-question shape failures (2/22 as of 2026-09-09) were fixed
+2026-09-10 — see Completed below. This entry is about the separate `rung`/`addresses` warnings,
+which are unaffected by that fix.
+
+**Effort:** L (would need an LLM judge)
+**Priority:** P4
+**Depends on:** None
+
+### The leak validator cannot catch a purely-prose leak
+
+**What:** The leak validator still cannot catch a leak stated purely in prose with no
+extractable fragment.
+
+**Why:** Unchanged from the design doc, which handles this case by prevention (the system
+prompt forbids it) plus eval fixtures probing for exactly that — not by this validator. A
+runtime LLM judge would catch it and roughly double the per-pause cost, a ceiling chosen
+deliberately.
+
+**Effort:** L
+**Priority:** P4
+**Depends on:** None
+
+### Set the tutor's origin/secret env vars and a provider spend cap before going public
+
+**What:** The route honours `ZEN_TUTOR_ORIGIN` and `ZEN_TUTOR_SHARED_SECRET` (or its
+client-readable twin `NEXT_PUBLIC_ZEN_TUTOR_SECRET` — see 2026-09-10 fix below), but none of
+them are set in any deployed environment yet, so the checks are no-ops today. No provider
+spend cap is configured either.
+
+**Why:** These matter at deploy, not in local dev. The real bound on worst-case loss is the
+provider-level spend cap — that must be set in the provider console before this goes public,
+regardless of the origin/secret checks (which are documented in the code as convenience
+guards, not real security).
+
+**Effort:** S (ops config, not code)
+**Priority:** P1
+**Depends on:** Going public with the key configured.
+
+### Exercise the pause UI in a real browser
+
+**What:** The route and the checks are verified programmatically; nobody has watched the world
+quiet down, the input lock, or the quota message in an actual session.
+
+**Why:** Automated coverage (unit tests + the live-model eval) proves the logic; it doesn't
+prove the UX reads correctly to an actual learner mid-session.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** None
+
+---
+
+## Analytics
+
+### Cap or rotate the analytics event store
+
+**What:** Add a size cap or rotation policy to the IndexedDB analytics event store.
+
+**Why:** The eng review settled on buffering every event in IndexedDB with a dev-only export to
+`.jsonl`. Nothing ever removes them, so the store grows for the life of the browser profile —
+every question latency, every pause, every session, forever. Exports get slower over time, and
+the store eventually competes with actual progress data for the origin's storage quota.
+
+**Context:** The stack is IndexedDB-only with no server store, so this data has nowhere else to
+live. A ring buffer keeping the last N sessions (50 is a reasonable default) or an
+export-then-prune flow both solve it. The trigger to act: export times becoming noticeable, or
+the browser surfacing a storage warning.
+
+Pros: bounded storage, fast exports, and no risk of a browser eviction event taking progress
+data with it (eviction is origin-wide — it does not spare the progress records). Cons: rotation
+means older sessions age out, which is awkward for a session-1 vs session-5 comparison if the
+retention window is set too small.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Stage 4 (persistence layer) existing first — it does now.
+
+---
+
+## Content
+
+### Re-add linear algebra, including its equivalence-checker work
+
+**What:** Restore the linear algebra topic (~30 more questions) after the calculus slice proves
+out — and budget for the checker work it requires, which is larger than it looks.
+
+**Why:** Linear algebra was cut from the vertical slice for authoring cost and per-tier question
+density, not because it doesn't belong. It is half of the original stated practice need. The cut
+obscured a real cost: linear algebra is where answer-equivalence checking gets genuinely hard,
+and none of that work exists in the current plan.
+
+**Context:** The current checker (mathjs parse + domain-safe numeric sampling, with
+differentiation for antiderivatives) handles scalar and symbolic expressions in one variable.
+None of those techniques transfer to matrices, sets, or basis equivalence:
+- Matrix answers need dimension-aware comparison, not scalar sampling.
+- Eigenvalue answers are sets — order must not affect correctness.
+- Null-space and eigenspace bases are non-unique, so two correct answers can look completely
+  different and both be right (requires span/row-equivalence comparison, not value comparison).
+
+Pros: restores the full practice scope originally wanted, and by then the loop is proven, so the
+authoring effort goes into something known to work. Cons: the checker work is closer to a second
+checker than an extension of the first (see above).
+
+**Effort:** XL
+**Priority:** P4
+**Depends on:** The calculus slice shipping, and the two instrumentation hypotheses being
+answered first.
+
+### Custom problem sets — a topic goes in, a generated set comes out
+
+**What:** A third way in alongside the two authored drills: the learner types a topic
+("integration by parts", "logarithm rules") and gets a practice set built for it.
+
+**Why:** The bank is thirty calculus questions. A learner who wants something it does not cover
+has nowhere to go, and authoring is the bottleneck the whole project keeps hitting. This is the
+feature that makes the app useful beyond what one person had time to write.
+
+**Context:** This inverts design doc constraint #1, and that has to be faced rather than
+discovered. The constraint says questions are versioned content files, validated at build time,
+*never generated at runtime* — and the reason given is competitive: free Socratic tutoring is
+already commoditised, so the authored, misconception-keyed bank is the defensible asset. A
+generate-on-demand feature is the thing the constraint exists to prevent.
+
+Two honest readings:
+1. It is a different product surface, not a replacement — the authored bank stays the crown
+   jewels and the spine of progression; generated sets are a scratchpad for topics the bank
+   does not reach.
+2. It quietly makes the bank optional — if generated sets are as good, the authored thirty are
+   thirty questions of sunk cost, and the moat is gone.
+
+Which one is true depends almost entirely on whether generated questions can be trusted, which
+is the engineering problem below.
+
+**The hard part is not generation, it is the answer key.** Everything downstream grades against
+`canonicalAnswer` with the equivalence checker. If a model invents the question *and* its own
+answer key, a wrong key marks correct work incorrect — the single worst failure this app can
+have. Mental math is the precedent *for* runtime generation, and it is worth being precise about
+why it is safe: it is procedurally generated from arithmetic the code performs itself, with no
+model in the loop. None of that assurance transfers here.
+
+**What makes it defensible, and most of the machinery already exists:**
+- Validate every generated question through `QuestionSchema` (Zod) — it already demands a
+  worked solution of >=2 steps, exactly 3 hint rungs, and >=2 named misconceptions with the
+  wrong answers they produce.
+- Then run the *semantic* checks `scripts/validate-content.ts` already performs on authored
+  content: the worked solution's last step must be equivalent to `canonicalAnswer`, and every
+  misconception's `wrongAnswer` must be genuinely wrong (`validate-content.ts:63`). Both go
+  through `compareAnswers`, which is content-agnostic and works on generated questions
+  unchanged.
+- Anything failing either pass is dropped silently and regenerated, never shown. Aim to
+  over-generate and discard rather than to repair.
+- Independently verify by differentiating or evaluating where the answer type allows it — the
+  checker already differentiates for antiderivatives.
+
+**The progression question, which is a product call and not a technical one:** ranks are gated
+on demonstrated accuracy *at a tier* (constraint #5), and a generated question's tier is
+whatever the model claims it is. The obvious answer is that generated sets earn no XP and no
+rank progress, the same call already made for speed in the mental-math drill, and for the same
+reason. Settle it before building, or the gate quietly stops being a gate.
+
+Pros: removes authoring as the ceiling on the product's usefulness; directly serves the
+builder's own stated need; the validation machinery is largely built. Cons: runs against the
+project's stated moat (above); real cost per set (tens of questions per request, needs its own
+budget and quota); generated hint ladders and misconceptions will be blander than authored ones
+even when correct; a moderation surface the app does not have today (the topic field is free
+text from a user, going into a model).
+
+**Context for the route:** `/api/tutor` is the pattern to copy — server-side key, origin check,
+shared secret, hard provider spend cap, and dev-mode cost logging. `lib/tutor/config.ts` already
+holds the rate cards and cost arithmetic, and its per-pause ceiling should get a per-set sibling
+rather than being reused. The generated bank should be persisted in IndexedDB next to the
+profile, which means the analytics store's rotation entry above stops being optional. Reuse
+`lib/content/drills.ts` as the registry — a generated set is just another `Question[]`.
+
+**Effort:** XL
+**Priority:** P4
+**Depends on:** Nothing technically. Decide the progression question and the constraint-#1
+reading first, because both change what gets built.
+
+---
+
+## Avatar
+
+### Coins — the half of the avatar feature that is still missing
+
+**What:** Coins awarded alongside XP (scaled by tier, reduced after a pause, same as XP), and a
+decision about what they buy now that rank already gates the cosmetics.
+
+**Why:** The avatar shipped 2026-09-08 (three slots, rank-gated) via `/design-review`, but ranks
+gate the *palette* tiers, leaving no role for a currency. The obvious answer is that the two
+gate different things: rank unlocks palette tiers, coins buy *parts* (blade, kasa shape, banner)
+that rank does not touch. Settle that before building the wallet, or coins end up duplicating a
+gate that already works.
+
+**Context:** Why rank and not coins in the first place — the design review put the avatar on
+the home page because the page had dead space and nothing to grow into, which made the avatar
+available before the currency meant to gate it existed, and a shop with imaginary money in it is
+worse than no shop. Ranks are already earned and already mean something.
+
+Keep it strictly cosmetic — the moment a purchase affects difficulty or hints, the mastery gate
+stops meaning anything. No third-party sprite packs; the existing parts are all drawn as
+character-grid pixel maps in `components/Dojo.tsx`, and the palette plumbing to extend them is
+in `lib/game/avatar.ts`.
+
+The summary card still shows a percentage rather than your ronin — putting it there is a small,
+worthwhile follow-up, since sharing is this project's only distribution channel.
+
+**Effort:** L
+**Priority:** P3
+**Depends on:** None
+
+---
+
+## Art & Sprites
+
+### The left-hand attack pose is unused
+
+**What:** `Sprites/roning_attack.png`'s left-hand pose (swings the other way) is currently
+unused.
+
+**Why:** If the composition ever puts a second post on the left, or a miss wants its own pose
+instead of the idle plus `anim-flinch`, it is already drawn — worth noting so it isn't
+re-sourced later.
+
+**Effort:** S
+**Priority:** P4
+**Depends on:** None
+
+### The strike is still one frame
+
+**What:** The attack motion is all CSS; the sheet has no in-betweens.
+
+**Why:** See "A flurry: fast answers should look like continuous attack" below — this is the
+raw-material half of that problem.
+
+**Effort:** M
+**Priority:** P4
+**Depends on:** None
+
+### The shin wraps read a different color on the strike vs. the idle pose
+
+**What:** The band rule used for the strike sprite sends most of the sheet's cream to leather
+tones on the shin wraps, which looks right on its own but doesn't quite match the idle pose's
+red.
+
+**Why:** Invisible at 60px; would become a real character-detail mismatch if the figure ever
+gets bigger.
+
+**Effort:** S
+**Priority:** P4
+**Depends on:** None
+
+### A phone still gets a ceiling band above the hall
+
+**What:** 19 rows of real ceiling render above the room on a phone now (down from a flat
+maroon band, fixed 2026-09-10 — see Design below), then flat `hall-wall` above that.
+
+**Why:** Slice-filling would frame a phone beautifully — the ronin and the post both sit inside
+the middle 51% — but the same rule crops heads at the desktop 7:1 ratio, and
+`preserveAspectRatio` cannot be switched by media query. It needs the narrower composition
+originally requested, or a measured container aspect in JS, which is a hydration risk for a
+cosmetic gain.
+
+**Effort:** L
+**Priority:** P3
+**Depends on:** A narrower art composition, or accepting the JS-measurement hydration risk.
+
+### The training post partially obscures the torii behind it
+
+**What:** The training post stands in front of the torii and its hanging scroll in the new hall
+art — readable, slightly busy.
+
+**Why:** Moving the pair left, in front of the bright shoji bay, would silhouette the ronin
+better. It also moves the XP number and the combo count, which live in scene coordinates, so
+it's not a free change.
+
+**Effort:** M
+**Priority:** P4
+**Depends on:** None
+
+### Commit the hall art source alongside its derivation script
+
+**What:** `Sprites/Background` (the hall source art) still needs committing.
+
+**Why:** The derivation is now `scripts/sprites/hall.py`, which re-prints the
+`--color-hall-wall` value to re-sample along with the PNG — the script exists, but its source
+input isn't tracked yet.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None
+
+---
+
+## Animation
+
+### A flurry: fast answers should look like continuous attack
+
+**What:** More than one strike frame, cycled, so a fast run of correct answers reads as one
+continuous flurry instead of the same pose flashing on and off.
+
+**Why:** The mental math drill is timed and a good streak lands answers a second apart or
+better, which is precisely when the animation stops working.
+
+**There is a concrete bug underneath this, and it should be fixed first, because it is most of
+the problem and costs nothing.** `app/play/page.tsx` sets `mood` to `"strike"` and schedules
+`setMood("idle")` 480ms later, keyed on `state.lastAward?.seq`. Answer again inside that window
+and the effect re-runs, clears the pending timer and sets `"strike"` again — but `mood` never
+left `"strike"`, so the `anim-lunge` class never leaves and re-enters the DOM and **the animation
+does not replay**.
+
+Measured in a browser, answering twice about 300ms apart, reading `getAnimations()` off the
+lunge group:
+
+| when | animation currentTime |
+|---|---|
+| 150ms after the first answer | 117ms — playing |
+| 60ms after the second answer | 333ms — still the *first* one, not restarted |
+| 480ms | `[]` — finished, while the pose is still on screen |
+
+So the second strike of a fast pair produces no movement at all, and then a static lunge sits
+there until the mood expires. The fix is the pattern the same file already uses for the XP
+number: `key={award.seq}` on the animated group in `Dojo.tsx` remounts it and replays. Do that
+before drawing anything new.
+
+**Then the frames.** Two sources exist and neither needs new art: `Sprites/roning_attack.png`'s
+unused second pose, and `Sprites/Rough_ronin_with_straw_h-Sword_attacking_fro` (a full
+8-direction set of a different attack, already transcribed once before the arc sheet arrived, so
+the route is known to work). `scripts/sprites/ronin-attack.py` is parameterised by frame and
+anchors, so generating another map is a few minutes.
+
+**The cost is where it always is with this approach: source size.** Each frame is 74 rows of 83
+characters, about 6KB inside `Dojo.tsx`. Three frames is 18KB of character grid in a component
+that is already several hundred lines. Two ways out, not equal:
+1. Move the maps to a data module and leave `Dojo.tsx` as the renderer — cheap, keeps the avatar
+   palette working.
+2. Render the frames to a PNG sprite sheet the way the hall was done — smaller and faster, but
+   bakes the palette in, so the armoury would stop reaching the ronin during a strike (the
+   opposite trade the hall entry made for the room). Do not take this one without deciding the
+   figure is art rather than kit.
+
+**Also settle:** what drives the cycle. Frame per strike index is the obvious answer
+(`award.seq % frames`), so a flurry visibly alternates rather than repeating. And
+`prefers-reduced-motion` already cuts `anim-lunge` — a frame cycle is a new kind of motion and
+needs its own answer there, probably "hold one frame".
+
+**Effort:** M (the replay bug is a one-line fix and worth doing on its own even if no new frames
+ever land; the full flurry is larger)
+**Priority:** P2 (the replay bug) / P4 (the full multi-frame flurry)
+**Depends on:** None
+
+---
+
+## Audio
+
+### Revisit the audio layer (cut from the vertical slice)
+
+**What:** One ambient loop plus a small SFX set, muted by default, toggleable, and remembered.
+
+**Why:** Cut during the eng review because it ships muted by default and answers neither
+instrumentation hypothesis. Not a bad idea, just not one that earns its place before the loop is
+proven.
+
+**Context:** The build prompt asks for the toggle state to be remembered, so this wants the
+persistence layer in place (it now exists). Respect `prefers-reduced-motion` neighbours here too
+— an audio equivalent doesn't exist as a media feature, so a first-run default of muted is doing
+that job.
+
+Pros: a large part of the 16-bit feel the project is going for; hit/miss cues would carry real
+weight alongside existing visual feedback. Cons: needs asset sourcing under a clean licence,
+which the plan explicitly constrains.
+
+**Effort:** L
+**Priority:** P4
+**Depends on:** The core loop being proven fun (the session-1 vs session-5 measurement).
+
+---
+
+## Design System
+
+Remaining findings from the 2026-09-10 design review that were stopped at the 20% design-fix
+risk threshold (eight others were fixed and committed that day — see Completed). Full report in
+`~/.gstack/projects/Zen_Learner/designs/design-audit-20260910/`.
+
+### Unify tracking (letter-spacing) into a small token set
+
+**What:** Six tracking values, four of them arbitrary, spread across 9 files:
+`tracking-widest` x28, `tracking-[0.2em]` x11, plus `[0.3em]`, `[0.25em]`, `[0.4em]` and
+`tracking-wide`. `text-label` alone carries five different trackings plus none.
+
+**Why:** `--text-label` was tokenised precisely because the size had been written as
+`text-[10px]` in 21 places, and the same fix stopped one step short of a `--tracking-label`
+token beside it.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** None
+
+### Introduce a named button scale
+
+**What:** Thirteen controls, five padding/size combinations chosen per call site. The primary
+action is `px-6 py-3 text-base` on the home screen and `px-5 py-2 text-xs` on the summary screen
+— the two most important buttons in the product, at visibly different weights — plus five
+different hover vocabularies for one tier of control.
+
+**Why:** Three named tiers in `globals.css` beside `.pixel-frame` would collapse all of it into
+one system.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** None
+
+### Announce correct answers, not just wrong ones
+
+**What:** The live region in `app/play/page.tsx` only ever fills for miss, unreadable and
+needs-evaluation. A correct answer's entire feedback is the XP number and the strike, both
+inside the `aria-hidden` SVG.
+
+**Why:** A screen-reader user is told every time they are wrong and never told they are right —
+an accessibility gap, not a cosmetic one.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** None
+
+### Give TierBars a label and a sub-640px fallback
+
+**What:** `TierBars` is unlabelled and is the only content in the app dropped entirely below
+640px. It renders bare numerals over `T1`..`T5`, so it reads as "24 T1 6 T2" to a screen reader,
+and `hidden sm:flex` removes it with no fallback in a codebase that otherwise only ever reflows.
+
+**Why:** Both are accessibility/consistency gaps against the rest of the app's own pattern of
+reflowing rather than hiding content.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** None
+
+### Converge on one panel padding and one Dojo height API
+
+**What:** Four panel paddings for one surface (`p-4`, `p-5`, `p-6`, `p-7`) — `p-5` is clearly the
+house value and the question card is the one-site deviation. Four `Dojo` heights invented at
+four call sites — the component takes `mood` as a typed union but leaves size as a free-form
+string.
+
+**Why:** Systems drift: each deviation was probably reasonable in isolation, but together they
+erode the token system's value.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** None
+
+### Consolidate opacity modifiers
+
+**What:** Seven ad-hoc opacity modifiers at six values survived an earlier cleanup meant to
+remove them: `border-gold/50` and `border-gold/60` for the same warning-frame intent in two
+files, `bg-ink/85` and `bg-ink/90` ten lines apart.
+
+**Why:** Contrast is fine on all of them — this is a systems leak, not a bug, but worth fixing
+before it compounds further.
+
+**Effort:** S
+**Priority:** P4
+**Depends on:** None
+
+### Fix three empty-state regressions
+
+**What:** Three related gaps: rank meters read as loading skeletons at zero progress (two
+full-width rows of dashes); ending a session with nothing answered shows `0%` as the largest
+thing on screen; keyboard-only legends ("SHIFT+ENTER WHEN STUCK") still show at 375px on `/` and
+`/play`, where there is no keyboard (carried from 2026-09-09).
+
+**Why:** Each reads correctly with real data, which is why each was missed — genuine empty-state
+gaps rather than always-broken UI.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None
+
+### Delete verified-dead animation and color code
+
+**What:** `.anim-hit` and `@keyframes hit-pop` have zero consumers (about 15 lines including a
+bespoke reduced-motion clause). `--color-timber` has zero consumers and `Dojo.tsx:46` hardcodes
+its value instead.
+
+**Why:** Both confirmed by grep, both safe to delete — pure cleanup.
+
+**Effort:** S
+**Priority:** P4
+**Depends on:** None
+
+### Watch the phone hall ceiling band and reduced-motion-in-browser verification
+
+See "A phone still gets a ceiling band above the hall" under Art & Sprites, and "Verify
+`prefers-reduced-motion` by observation, not just by source" below — both carried forward from
+the design review rather than duplicated here.
+
+### Verify `prefers-reduced-motion` by observation, not just by source
+
+**What:** All animation classes are confirmed present in the `prefers-reduced-motion` block in
+`app/globals.css` by source (re-confirmed 2026-09-10, one class per keyframe, none missing), but
+nobody has watched the app with the OS preference actually on.
+
+**Why:** The headless browser used for the design reviews cannot emulate the preference, so this
+needs a real device/browser check.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None
+
+---
+
+## Completed
+
+### Mental math drill
 
 A second drill: fast mental arithmetic (54 − 17, 21 × 11), timed. Reached from the home
 page, or directly at `/play?drill=mental-math`.
@@ -28,16 +595,11 @@ is reachable, and no hint is degenerate. That last group exists because the firs
 shipped hints like "you are 0 above it. Add 0 then 0." — arithmetically true, useless,
 and invisible to every correctness test. Do not delete that block.
 
-**Still open:**
-- The home page tagline and the calculus card both used to promise "no clock running".
-  The promise now lives on the calculus card only, where it is still true. Worth a second
-  look if a third drill lands.
-- No per-question time target, so "fast" is measured only against your own previous
-  times. A target-time band per tier would make the clock mean something on question one.
-- Tier 5 tops out around `41 × 25`. If that stops being a stretch, the ceiling needs
-  raising rather than the range widening.
+Remaining open sub-items moved to the Mental Math section above.
 
-## The sum is not an answer — fixed 2026-09-09
+**Completed:** 2026-09-08
+
+### The sum is not an answer
 
 `31 * 20` was scored **correct** for the question `31 × 20`. Every question in
 the mental math drill was answerable by retyping it, so XP, ranks and mastery
@@ -75,7 +637,9 @@ to the right number (`620 + 0`, `621 - 1`, `1240 / 2`) and the forms that must
 still be accepted (`620`, `(620)`, `620.0`). The calculus bank sets the flag
 nowhere, and `check.test.ts`'s "3/3 is still 1" case is what holds that line.
 
-## Tutor layer (stage 5) — shipped and verified 2026-09-09
+**Completed:** 2026-09-09
+
+### Tutor layer (stage 5)
 
 The constrained tutor: `/api/tutor`, the leak validator, the daily quota, the eval
 suite, and the pause UI that consumes them. Run against the live model; the numbers
@@ -93,6 +657,7 @@ which one they got. Pulling `ANTHROPIC_API_KEY` out leaves the app fully playabl
 |---|---|---|---|---|---|
 | first run | 9 | 2 | 2 | 6 | 8/22 |
 | after fixes | 0 | 2 | 3 | 3 | 14/22 |
+| after the 2026-09-10 "one question" fix | 0 | 0 | 1 | 3 | 18/22 |
 
 `--save=f.json` keeps the replies and `--replay=f.json` re-checks them for free. Use it:
 the replies are the expensive half and they do not change when a check does, so tuning
@@ -120,6 +685,12 @@ checker moves — which is the only way to tell a real fix from a lucky sample.
   like `x*e^x - e^x` was only ever seen in halves. "So you get -x/y." read as clean.
   Fixed, and `leak.test.ts` now checks all 30 answers across 4 phrasings — 120/120,
   up from 109/120.
+- **Both remaining shape failures (2026-09-09) were the same rule read two different
+  ways, fixed 2026-09-10.** `limit-factorable` chained two questions; `implicit-diff-trig`'s
+  last rung wrote an imperative instead of a question. The rule became an output
+  contract — exactly one question mark, the question ends the reply — with a closing
+  "BEFORE YOU SEND" block naming both failure modes. 0 shape failures after, 18/22 clean
+  (up from 14/22). $0.0205 for the confirming run.
 
 **Three things the build order surfaced that the plan had wrong:**
 
@@ -133,162 +704,11 @@ checker moves — which is the only way to tell a real fix from a lucky sample.
 - **The quota counts pauses, not requests.** Charging per rung would have turned a
   five-pause allowance into roughly one and a half.
 
-**Still open:**
-- **Two shape failures persist:** the model occasionally makes a statement where the
-  prompt asks for exactly one question. Harmless in itself — the reply is still a good
-  hint — but it is the clearest remaining prompt-adherence gap and the cheapest thing to
-  hill-climb next.
-- **`rung` and `addresses` are heuristics and warn rather than fail.** Word-overlap
-  proxies for semantic questions; `addresses` misses a reply that speaks to the mistake
-  in different words. A stricter version means an LLM judge, which the design doc
-  rejected on cost. The 3 remaining `addresses` warnings were all read and are fine.
-- **The leak validator still cannot catch a leak stated purely in prose** with no
-  extractable fragment. Unchanged from the design doc, which handles it by prevention
-  plus eval fixtures.
-- **No origin or shared-secret protection is configured, and no provider spend cap.**
-  The route honours `ZEN_TUTOR_ORIGIN` and `ZEN_TUTOR_SHARED_SECRET` but both are unset,
-  so the checks are no-ops today. They matter at deploy, and the real bound on loss is
-  the spend cap, which must be set in the provider console before this goes public.
-- **The pause UI has not been exercised in a browser.** The route and the checks are
-  verified; nobody has watched the world quiet down, the input lock, or the quota message
-  in an actual session.
+Remaining open sub-items moved to the Tutor section above.
 
-## Cap or rotate the analytics event store
+**Completed:** 2026-09-09 (eval-verified), with a further fix 2026-09-10
 
-**What:** Add a size cap or rotation policy to the IndexedDB analytics event store.
-
-**Why:** The eng review settled on buffering every event in IndexedDB with a dev-only export to
-`.jsonl`. Nothing ever removes them, so the store grows for the life of the browser profile —
-every question latency, every pause, every session, forever. Exports get slower over time, and
-the store eventually competes with actual progress data for the origin's storage quota.
-
-**Pros:** Bounded storage, fast exports, and no risk of a browser eviction event taking progress
-data with it (eviction is origin-wide — it does not spare the progress records).
-
-**Cons:** Rotation means older sessions age out, which is awkward for a session-1 vs session-5
-comparison if the retention window is set too small.
-
-**Context:** The stack is IndexedDB-only with no server store, so this data has nowhere else to
-live. A ring buffer keeping the last N sessions (50 is a reasonable default) or an
-export-then-prune flow both solve it. The trigger to act: export times becoming noticeable, or
-the browser surfacing a storage warning.
-
-**Depends on:** Stage 4 (persistence layer) existing first.
-
----
-
-## Re-add linear algebra, including its equivalence-checker work
-
-**What:** Restore the linear algebra topic (~30 more questions) after the calculus slice proves
-out — and budget for the checker work it requires, which is larger than it looks.
-
-**Why:** Linear algebra was cut from the vertical slice for authoring cost and per-tier question
-density, not because it doesn't belong. It is half of the original stated practice need. The cut
-obscured a real cost: linear algebra is where answer-equivalence checking gets genuinely hard,
-and none of that work exists in the current plan.
-
-**Pros:** Restores the full practice scope originally wanted, and by then the loop is proven, so
-the authoring effort goes into something known to work.
-
-**Cons:** The checker work is closer to a second checker than an extension of the first:
-- Matrix answers need dimension-aware comparison, not scalar sampling.
-- Eigenvalue answers are sets — order must not affect correctness.
-- Null-space and eigenspace bases are non-unique, so two correct answers can look completely
-  different and both be right (requires span/row-equivalence comparison, not value comparison).
-
-**Context:** The current checker (mathjs parse + domain-safe numeric sampling, with
-differentiation for antiderivatives) handles scalar and symbolic expressions in one variable.
-None of those techniques transfer to matrices, sets, or basis equivalence. Knowing this before
-assuming "linalg is just 30 more questions" is the point of this entry.
-
-**Depends on:** The calculus slice shipping, and the two instrumentation hypotheses being
-answered first.
-
----
-
-## Coins — the half of the avatar feature that is still missing
-
-**Status:** The avatar shipped on 2026-09-08 via `/design-review`. This entry is what is left.
-
-**What shipped:** Three customisable slots (hat, robe, obi), five options each, rendered live on
-the home page and carried into the practice hall. Persisted in IndexedDB as profile version 2.
-Unlocks are gated on **rank**, not coins.
-
-**Why rank and not coins:** The design review put the avatar on the home page because the page
-had dead space and nothing to grow into — the figure was needed there regardless. That made the
-avatar available before the currency meant to gate it existed, and a shop with imaginary money
-in it is worse than no shop. Ranks are already earned and already mean something, so the reward
-for holding tier 3 is that you get to look like someone who holds tier 3.
-
-**What is left:** Coins awarded alongside XP (scaled by tier, reduced after a pause, same as XP),
-and a decision about what they buy now that rank already gates the cosmetics. The obvious
-answer is that the two gate different things: rank unlocks the *palette* tiers, coins buy
-*parts* (blade, kasa shape, banner) that rank does not touch. Settle that before building the
-wallet, or coins end up duplicating a gate that already works.
-
-**Still true from the original entry:** Keep it strictly cosmetic. The moment a purchase affects
-difficulty or hints, the mastery gate stops meaning anything. No third-party sprite packs; the
-existing parts are all drawn as character-grid pixel maps in `components/Dojo.tsx`, and the
-palette plumbing to extend them is in `lib/game/avatar.ts`.
-
-**Answered by the shipped work:** The avatar appears during the grind, not only on the summary
-card. The summary card still shows a percentage rather than your ronin — putting it there is a
-small, worthwhile follow-up, since sharing is this project's only distribution channel.
-
----
-
-## Design polish deferred from the 2026-09-08 review
-
-Two of the four are done. Full report in
-`~/.gstack/projects/Zen_Learner/designs/design-audit-20260908/`.
-
-- ~~**The play route has no `<h1>`.**~~ Done 2026-09-08. Both the play route
-  and a shared summary now carry a visually hidden heading.
-- ~~**No pixel typeface.**~~ Done 2026-09-08. Silkscreen (OFL, self-hosted via
-  `next/font`) on the display layer only; body copy, the answer input and
-  anything KaTeX touches stay monospace.
-- ~~**The ronin was a hand-drawn 20x22 grid.**~~ Done 2026-09-08. Redrawn from
-  `Sprites/` at 16 colours on a single 288x96 pixel grid, with a fourth avatar
-  slot (hakama) the new sprite made possible.
-- ~~**The hall grows a tall ceiling on narrow viewports.**~~ Closed
-  2026-09-10 by `/design-review`. The frame is now capped to the art's own
-  288x115, the ratio at which the art fills it exactly — the scene is 96 units
-  tall inside a 115-row image and the 19 rows left over are precisely the
-  ceiling above the viewBox. No band at any width, and no new composition was
-  needed after all. The same defect rotated 90 degrees (the room running out
-  at the 12:1 pause strip) was fixed alongside it by tiling three deep.
-- **Reduced motion is verified by source, not by observation.** All nine
-  animation classes are in the `prefers-reduced-motion` block in
-  `app/globals.css` — re-confirmed 2026-09-10, one class per keyframe, none
-  missing — but the headless browser still cannot emulate the preference, so
-  nobody has watched the app with it on. (The tenth, `.anim-hit`, turns out to
-  have no consumers at all; see the 2026-09-10 entry.)
-
----
-
-## Revisit the audio layer (cut from the vertical slice)
-
-**What:** One ambient loop plus a small SFX set, muted by default, toggleable, and remembered.
-
-**Why:** Cut during the eng review because it ships muted by default and answers neither
-instrumentation hypothesis. Not a bad idea, just not one that earns its place before the loop
-is proven.
-
-**Pros:** A large part of the 16-bit feel the project is going for; the hit and miss cues would
-carry real weight alongside the existing visual feedback.
-
-**Cons:** Needs asset sourcing under a clean licence, which the plan explicitly constrains.
-
-**Context:** The build prompt asks for the toggle state to be remembered, so this wants the
-persistence layer in place. Respect `prefers-reduced-motion` neighbours here too — an audio
-equivalent (`prefers-reduced-motion` does not cover sound, so a first-run default of muted is
-doing that job).
-
-**Depends on:** The core loop being proven fun (the session-1 vs session-5 measurement).
-
----
-
-## The strike, from the new attack sheet — shipped 2026-09-09
+### The strike, from the new attack sheet
 
 `RONIN_ATTACK` was a hand-trace. It is now resampled from
 `Sprites/roning_attack.png` by `scripts/sprites/ronin-attack.py`, which prints
@@ -339,158 +759,11 @@ between his legs — have at most two neighbours and are untouched. Zero interio
 holes now, and the completed silhouette moved the hat centre half a unit, so
 the draw position went from x=109 to x=110.
 
-**Still open:**
-- **The left-hand pose on that sheet is unused.** It swings the other way. If
-  the composition ever puts a second post on the left, or a miss wants its own
-  pose instead of the idle plus `anim-flinch`, it is already drawn.
-- **The strike is still one frame.** The motion is all CSS; the sheet has no
-  in-betweens.
-- **The shin wraps read tan here and red on the idle.** The band rule sends
-  most of that cream to the leather tones, which looks right on its own but is
-  not quite the same character detail. Invisible at 60px; real if the figure
-  ever gets bigger.
+Remaining open sub-items moved to Art & Sprites above.
 
-## Design polish deferred from the 2026-09-10 review
+**Completed:** 2026-09-09
 
-Eight findings were fixed and committed that day; these are what the review
-found and did not fix, stopped at the 20% design-fix risk threshold. Full
-report in `~/.gstack/projects/Zen_Learner/designs/design-audit-20260910/`.
-
-**Fixed that day, for the record:** the maths rendering in Computer Modern
-serif on every calculus question (`.katex` set only `font-size`, and the
-comment above it described a rule that was never written); drill blurbs at
-eleven characters a line on a phone; the hall's flat maroon slab at narrow
-widths and its maroon ends at the 12:1 pause strip; ARMOURY at 49x16; the
-finished-session screen having no heading; the 72px rank-up title in the body
-face; in-scene labels vanishing into the lit art.
-
-**Two HIGH, both systems-level and both cheap:**
-
-- **Six tracking values, four of them arbitrary, across 9 files.**
-  `tracking-widest` x28, `tracking-[0.2em]` x11, plus `[0.3em]`, `[0.25em]`,
-  `[0.4em]` and `tracking-wide`. `text-label` alone carries five different
-  trackings plus none. `--text-label` was tokenised precisely because the size
-  had been written as `text-[10px]` in 21 places, and the same fix stopped one
-  step short of `--tracking-label` beside it.
-- **No button scale.** Thirteen controls, five padding/size combinations chosen
-  per call site. The primary action is `px-6 py-3 text-base` on the home screen
-  and `px-5 py-2 text-xs` on the summary screen — the two most important
-  buttons in the product, at visibly different weights — plus five different
-  hover vocabularies for one tier of control. Three named tiers in
-  `globals.css` beside `.pixel-frame` collapses all of it.
-
-**Accessibility, both MEDIUM:**
-
-- **Wrong answers are announced; correct answers are silent.** The live region
-  in `app/play/page.tsx` only ever fills for miss, unreadable and
-  needs-evaluation. A correct answer's entire feedback is the XP number and the
-  strike, both inside the `aria-hidden` SVG. A screen-reader user is told every
-  time they are wrong and never told they are right.
-- **`TierBars` is unlabelled and is the only content in the app dropped
-  entirely below 640px.** It renders bare numerals over `T1`..`T5`, so it reads
-  as "24 T1 6 T2", and `hidden sm:flex` removes it with no fallback in a
-  codebase that otherwise only ever reflows.
-
-**Systems drift, MEDIUM:**
-
-- **Four panel paddings for one surface** (`p-4`, `p-5`, `p-6`, `p-7`); `p-5`
-  is clearly the house value and the question card is the one-site deviation.
-  **Four `Dojo` heights** invented at four call sites — the component takes
-  `mood` as a typed union but leaves size as a free-form string.
-- **Seven ad-hoc opacity modifiers at six values** survived the cleanup that
-  was meant to remove them: `border-gold/50` and `border-gold/60` for the same
-  warning-frame intent in two files, `bg-ink/85` and `bg-ink/90` ten lines
-  apart. Contrast is fine on all of them; this is a systems leak, not a bug.
-
-**Empty states, MEDIUM:**
-
-- **The rank meters read as loading skeletons at zero progress** — two
-  full-width rows of dashes. With data they read correctly, which is why this
-  was missed twice.
-- **Ending a session with nothing answered shows `0%` as the largest thing on
-  screen.** An empty state drawn as a failure.
-- **Keyboard-only legends still show at 375px** on `/` and `/play`
-  ("SHIFT+ENTER WHEN STUCK"), where there is no keyboard. Carried from
-  2026-09-09.
-
-**Verified dead, POLISH:** `.anim-hit` and `@keyframes hit-pop` have zero
-consumers — about 15 lines including a bespoke reduced-motion clause.
-`--color-timber` has zero consumers and `Dojo.tsx:46` hardcodes its value.
-Both confirmed by grep, both safe to delete.
-
-**One claim disproved, worth not re-deriving:** the source audit reported
-`antialiased` on `<body>` defeating `-webkit-font-smoothing: none` in
-`globals.css`, with a specificity argument. Live, the computed value on both
-`html` and `body` is `none` — Tailwind v4's layer order keeps the base rule
-winning. Not a finding.
-
-## A flurry: fast answers should look like continuous attack
-
-**What:** More than one strike frame, cycled, so that a fast run of correct
-answers reads as one continuous flurry instead of the same pose flashing on and
-off.
-
-**Why:** the mental math drill is timed and a good streak lands answers a
-second apart or better, which is precisely when the animation stops working.
-
-**There is a concrete bug underneath this, and it should be fixed first,
-because it is most of the problem and costs nothing.** `app/play/page.tsx` sets
-`mood` to `"strike"` and schedules `setMood("idle")` 480ms later, keyed on
-`state.lastAward?.seq`. Answer again inside that window and the effect re-runs,
-clears the pending timer and sets `"strike"` again — but `mood` never left
-`"strike"`, so the `anim-lunge` class never leaves and re-enters the DOM and
-**the animation does not replay**.
-
-Measured in a browser, answering twice about 300ms apart, reading
-`getAnimations()` off the lunge group:
-
-| when | animation currentTime |
-|---|---|
-| 150ms after the first answer | 117ms — playing |
-| 60ms after the second answer | 333ms — still the *first* one, not restarted |
-| 480ms | `[]` — finished, while the pose is still on screen |
-
-So the second strike of a fast pair produces no movement at all, and then a
-static lunge sits there until the mood expires. The fix is the pattern the same
-file already uses for the XP number: `key={award.seq}` on the animated group in
-`Dojo.tsx` remounts it and replays. Do that before drawing anything new.
-
-**Then the frames.** Two sources exist and neither needs new art:
-
-- `Sprites/roning_attack.png` has a second pose, swinging the other way,
-  currently unused.
-- `Sprites/Rough_ronin_with_straw_h-Sword_attacking_fro` is a full 8-direction
-  set of a different attack — sword held across the body, a good wind-up or
-  recovery either side of the big swing. It was transcribed once (1:1, since
-  that sheet shares the idle's rig) before the arc sheet arrived, so the route
-  is known to work.
-
-`scripts/sprites/ronin-attack.py` is parameterised by frame and anchors, so
-generating another map is a few minutes.
-
-**The cost is where it always is with this approach: source size.** Each frame
-is 74 rows of 83 characters, about 6KB inside `Dojo.tsx`. Three frames is 18KB
-of character grid in a component that is already 500 lines. Two ways out, and
-they are not equal:
-
-1. Move the maps to a data module and leave `Dojo.tsx` as the renderer. Cheap,
-   keeps the avatar palette working, and the grids stop drowning the component.
-2. Render the frames to a PNG sprite sheet the way the hall was done. Smaller
-   and faster, but it bakes the palette in — the armoury would stop reaching
-   the ronin during a strike, which is exactly the trade the hall entry decided
-   the other way for the room. Do not take this one without deciding that the
-   figure is art rather than kit.
-
-**Also settle:** what drives the cycle. Frame per strike index is the obvious
-answer (`award.seq % frames`), so a flurry visibly alternates rather than
-repeating. And `prefers-reduced-motion` already cuts `anim-lunge` — a frame
-cycle is a new kind of motion and needs its own answer there, probably "hold
-one frame".
-
-**Depends on:** nothing. The replay bug is a one-line fix and worth doing on
-its own even if no new frames ever land.
-
-## The 16-bit hall — shipped 2026-09-09
+### The 16-bit hall
 
 `components/Dojo.tsx` no longer draws the room. The wall, floor, shoji bays,
 banner and lantern rects are gone; the hall is `public/hall/hall.png`, derived
@@ -527,102 +800,77 @@ a fold. The home page is now full-bleed room with no seam.
 The figures moved up 2 units (feet at y=75) to land on the platform's lit
 boards rather than on its dark front edge.
 
-**Still open:**
-- **A phone still gets a band above the room.** 19 rows of real ceiling now,
-  then flat `hall-wall` above that. Better than the old flat band, not fixed.
-  Slice-filling would frame a phone beautifully — the ronin and the post both
-  sit inside the middle 51% — but the same rule crops heads at 7:1, and
-  `preserveAspectRatio` cannot be switched by media query. It needs the
-  narrower composition the old entry asked for, or a measured container aspect
-  in JS, which is a hydration risk for a cosmetic gain.
-- **The training post stands in front of the torii and its hanging scroll.**
-  Readable, slightly busy. Moving the pair left, in front of the bright shoji
-  bay, would silhouette the ronin better; it also moves the XP number and the
-  combo count, which live in scene coordinates.
-- ~~**`Sprites/Background` is the source and is untracked.**~~ The derivation
-  is now `scripts/sprites/hall.py`, which re-prints the `--color-hall-wall`
-  value to re-sample along with the PNG. The source art still needs committing
-  alongside it.
+Remaining open sub-items moved to Art & Sprites above.
 
-## Custom problem sets — a topic goes in, a generated set comes out
+**Completed:** 2026-09-09
 
-**What:** A third way in alongside the two authored drills: the learner types a topic
-("integration by parts", "logarithm rules") and gets a practice set built for it.
+### Design polish — 2026-09-08 review (3 of 5 findings)
 
-**Why:** The bank is thirty calculus questions. A learner who wants something it does not
-cover has nowhere to go, and authoring is the bottleneck the whole project keeps hitting.
-This is the feature that makes the app useful beyond what one person had time to write.
+Full report in `~/.gstack/projects/Zen_Learner/designs/design-audit-20260908/`.
 
-**This inverts design doc constraint #1, and that has to be faced rather than discovered.**
-The constraint says questions are versioned content files, validated at build time, *never
-generated at runtime* — and the reason given is competitive: free Socratic tutoring is
-already commoditised, so the authored, misconception-keyed bank is the defensible asset.
-A generate-on-demand feature is the thing the constraint exists to prevent.
+- The play route had no `<h1>`. Both the play route and a shared summary now carry a
+  visually hidden heading.
+- No pixel typeface. Silkscreen (OFL, self-hosted via `next/font`) on the display layer
+  only; body copy, the answer input and anything KaTeX touches stay monospace.
+- The ronin was a hand-drawn 20x22 grid. Redrawn from `Sprites/` at 16 colours on a single
+  288x96 pixel grid, with a fourth avatar slot (hakama) the new sprite made possible.
 
-Two honest readings:
+The remaining two findings from this review (the hall ceiling and reduced-motion
+verification) are tracked below — the ceiling one closed 2026-09-10, reduced-motion
+verification is still open (see Design System above).
 
-1. **It is a different product surface, not a replacement.** The authored bank stays the
-   crown jewels and the spine of progression; generated sets are a scratchpad for topics
-   the bank does not reach. Nothing about the bank changes.
-2. **It quietly makes the bank optional.** If generated sets are as good, the authored
-   thirty are thirty questions of sunk cost, and the moat is gone.
+**Completed:** 2026-09-08
 
-Which one is true depends almost entirely on whether generated questions can be trusted,
-which is the engineering problem below.
+### The hall grows a tall ceiling on narrow viewports
 
-**The hard part is not generation, it is the answer key.** Everything downstream grades
-against `canonicalAnswer` with the equivalence checker. If a model invents the question
-*and* its own answer key, a wrong key marks correct work incorrect — the single worst
-failure this app can have. It teaches the wrong thing and burns trust in one move, and the
-learner has no way to tell whose fault it was.
+**What it was:** The dojo scene was 3:1 and anchored to the bottom of its container, so on a
+phone (roughly 1.4:1) more than half the room was empty wall above the action, reading as a
+high ceiling.
 
-Mental math is the precedent *for* runtime generation, and it is worth being precise about
-why it is safe: it is procedurally generated from arithmetic the code performs itself, and
-`lib/content/mental.test.ts` proves over a wide sample that every answer is the arithmetic
-it claims. There is no model in that loop. None of that assurance transfers here.
+**The fix:** The frame is now capped to the art's own 288x115, the ratio at which the art fills
+it exactly — the scene is 96 units tall inside a 115-row image and the 19 rows left over are
+precisely the ceiling above the viewBox. No band at any width, and no new composition was needed
+after all. The same defect rotated 90 degrees (the room running out at the 12:1 pause strip) was
+fixed alongside it by tiling three deep.
 
-**What makes it defensible, and most of the machinery already exists:**
+**Completed:** 2026-09-10, by `/design-review`
 
-- Validate every generated question through `QuestionSchema` (Zod). It already demands a
-  worked solution of >=2 steps, exactly 3 hint rungs, and >=2 named misconceptions with the
-  wrong answers they produce. A model that cannot fill that in has not produced a question.
-- Then run the *semantic* checks `scripts/validate-content.ts` already performs on authored
-  content, which are the ones that matter: the worked solution's last step must be
-  equivalent to `canonicalAnswer`, and every misconception's `wrongAnswer` must be
-  genuinely wrong (`validate-content.ts:63`). Both go through `compareAnswers`, which is
-  content-agnostic and works on generated questions unchanged.
-- Anything failing either pass is dropped silently and regenerated, never shown. Aim to
-  over-generate and discard rather than to repair.
-- Independently verify by differentiating or evaluating where the answer type allows it —
-  the checker already differentiates for antiderivatives.
+### Design polish — 2026-09-10 review (8 findings)
 
-**The progression question, which is a product call and not a technical one:** ranks are
-gated on demonstrated accuracy *at a tier* (constraint #5), and a generated question's tier
-is whatever the model claims it is. Let generated sets feed mastery and the gate stops
-meaning anything — ask for easy questions labelled tier 5 and rank up on them. The obvious
-answer is that generated sets earn no XP and no rank progress, the same call already made
-for speed in the mental-math drill, and for the same reason. Settle it before building, or
-the gate quietly stops being a gate.
+Full report in `~/.gstack/projects/Zen_Learner/designs/design-audit-20260910/`. Fixed and
+committed that day: the maths rendering in Computer Modern serif on every calculus question
+(`.katex` set only `font-size`, and the comment above it described a rule that was never
+written); drill blurbs at eleven characters a line on a phone; the hall's flat maroon slab at
+narrow widths and its maroon ends at the 12:1 pause strip; ARMOURY at 49x16; the finished-session
+screen having no heading; the 72px rank-up title in the body face; in-scene labels vanishing into
+the lit art; the hall ceiling (tracked separately above).
 
-**Pros:** Removes authoring as the ceiling on the product's usefulness. Directly serves the
-builder's own stated need — relearning first-year calculus is not confined to thirty
-questions. The validation machinery is largely built.
+One claim from the source audit was disproved and is worth not re-deriving: `antialiased` on
+`<body>` was reported as defeating `-webkit-font-smoothing: none` in `globals.css`, with a
+specificity argument. Live, the computed value on both `html` and `body` is `none` — Tailwind
+v4's layer order keeps the base rule winning. Not a finding.
 
-**Cons:** Runs against the project's stated moat (above). Real cost per set, and unlike the
-tutor's $0.03-per-pause ceiling this is tens of questions per request — needs its own budget
-and quota before a single call is made. Generated hint ladders and misconceptions will be
-blander than authored ones even when they are correct, and the misconception-keyed ladder is
-the thing the tutor's whole design rests on. Plus a moderation surface the app does not have
-today: the topic field is free text from a user, going into a model.
+The findings this review surfaced but did NOT fix (stopped at the 20% design-fix risk threshold)
+are tracked individually under Design System and Art & Sprites above.
 
-**Context:** `/api/tutor` is the pattern to copy for the route — server-side key, origin
-check, shared secret, hard provider spend cap, and dev-mode cost logging. `lib/tutor/config.ts`
-already holds the rate cards and the cost arithmetic, and its per-pause ceiling should get a
-per-set sibling rather than being reused. The generated bank should be persisted in IndexedDB
-next to the profile so a set survives a reload, which means the analytics store's rotation
-entry above stops being optional. Reuse `lib/content/drills.ts` as the registry — a generated
-set is just another `Question[]`, which is the whole point of the architecture and the reason
-this is cheaper to build than it looks.
+**Completed:** 2026-09-10 (partial — 8 of the review's findings; the rest are open TODOs)
 
-**Depends on:** Nothing technically. Decide the progression question and the constraint-#1
-reading first, because both change what gets built.
+### The reply is exactly one question, every time
+
+The eval had sat at 2 shape failures out of 22 since stage 5 shipped, and the runner exits
+non-zero on any failure, so the pre-merge gate was permanently red and told you nothing.
+
+Both failures were the same rule read two different ways. `limit-factorable` chained two
+questions ("what are they? ... what can you cancel?"); the `implicit-diff-trig` last rung wrote
+an imperative instead ("check what you moved to which side"), which is zero questions by the
+check and reads as an instruction rather than a nudge.
+
+The rule was stated once, mid-list, as "at most two sentences, exactly one of them is a
+question." It is now an output contract: exactly one question mark, the question ends the reply,
+and a closing BEFORE YOU SEND block names both failure modes with the model's own words as the
+examples.
+
+Measured, 22 fixtures against the live model: before 0 leak · 2 shape · 3 rung · 3 addresses ·
+14/22 clean · exit 1 — after 0 leak · 0 shape · 1 rung · 3 addresses · 18/22 clean · exit 0.
+
+**Completed:** 2026-09-10
