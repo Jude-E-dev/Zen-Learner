@@ -1,4 +1,5 @@
 import type { TierMove } from "./selector";
+import type { FallbackReason } from "../tutor/request";
 
 /**
  * The event stream exists to answer exactly two questions (design doc #7):
@@ -54,7 +55,7 @@ export type GameEvent =
       ts: number;
       questionId: string;
       rung: number;
-      reason: "leak" | "provider-error" | "timeout" | "not-configured" | "quota";
+      reason: FallbackReason;
     }
   | { type: "solution_revealed"; ts: number; questionId: string }
   | {
