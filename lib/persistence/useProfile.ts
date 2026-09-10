@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionState } from "../game/session";
 import { createStore, emptyProfile, type Profile, type Store } from "./store";
+import { createWriteQueue } from "./writeQueue";
 import { mergeSession } from "./profile";
 import type { AvatarChoice } from "../game/avatar";
 import { spendPause } from "../tutor/quota";
@@ -20,6 +21,16 @@ export function useProfile() {
   const [ready, setReady] = useState(false);
   const [durable, setDurable] = useState(true);
   const storeRef = useRef<Store | null>(null);
+
+  /**
+   * commitSession, saveAvatar and spendTutorPause each do a load-mutate-save
+   * against the same record. Without serialising them, two overlapping calls
+   * race: the later save's `before` snapshot is stale, so it silently
+   * overwrites whatever the other write just changed — for pauseQuota that
+   * means quietly rolling back today's spend count. The queue makes each
+   * load-mutate-save atomic relative to the others, in call order.
+   */
+  const enqueueWrite = useRef(createWriteQueue()).current;
 
   useEffect(() => {
     let cancelled = false;
@@ -39,30 +50,38 @@ export function useProfile() {
     };
   }, []);
 
-  const commitSession = useCallback(async (state: SessionState) => {
-    const store = storeRef.current;
-    if (!store) return;
+  const commitSession = useCallback(
+    (state: SessionState) =>
+      enqueueWrite(async () => {
+        const store = storeRef.current;
+        if (!store) return;
 
-    const before = await store.loadProfile();
-    const merged = mergeSession(before, state);
-    await store.saveProfile(merged);
-    // The session number is the one that just finished.
-    await store.appendEvents(merged.sessions, state.events);
-    setProfile(merged);
-  }, []);
+        const before = await store.loadProfile();
+        const merged = mergeSession(before, state);
+        await store.saveProfile(merged);
+        // The session number is the one that just finished.
+        await store.appendEvents(merged.sessions, state.events);
+        setProfile(merged);
+      }),
+    [enqueueWrite],
+  );
 
   /**
    * Saving the avatar reloads the profile first for the same reason
    * commitSession does: the picker and a finishing session can both be writing,
    * and the last write must not roll back the other's fields.
    */
-  const saveAvatar = useCallback(async (avatar: AvatarChoice) => {
-    setProfile((current) => ({ ...current, avatar }));
-    const store = storeRef.current;
-    if (!store) return;
-    const before = await store.loadProfile();
-    await store.saveProfile({ ...before, avatar });
-  }, []);
+  const saveAvatar = useCallback(
+    (avatar: AvatarChoice) =>
+      enqueueWrite(async () => {
+        setProfile((current) => ({ ...current, avatar }));
+        const store = storeRef.current;
+        if (!store) return;
+        const before = await store.loadProfile();
+        await store.saveProfile({ ...before, avatar });
+      }),
+    [enqueueWrite],
+  );
 
   /**
    * Count one AI-tutored pause against today's quota.
@@ -72,19 +91,23 @@ export function useProfile() {
    * writers above, because a session ending mid-pause must not roll the
    * counter back and hand out a free pause.
    */
-  const spendTutorPause = useCallback(async () => {
-    setProfile((current) => ({
-      ...current,
-      pauseQuota: spendPause(current.pauseQuota),
-    }));
-    const store = storeRef.current;
-    if (!store) return;
-    const before = await store.loadProfile();
-    await store.saveProfile({
-      ...before,
-      pauseQuota: spendPause(before.pauseQuota),
-    });
-  }, []);
+  const spendTutorPause = useCallback(
+    () =>
+      enqueueWrite(async () => {
+        setProfile((current) => ({
+          ...current,
+          pauseQuota: spendPause(current.pauseQuota),
+        }));
+        const store = storeRef.current;
+        if (!store) return;
+        const before = await store.loadProfile();
+        await store.saveProfile({
+          ...before,
+          pauseQuota: spendPause(before.pauseQuota),
+        });
+      }),
+    [enqueueWrite],
+  );
 
   const exportEvents = useCallback(async () => {
     const store = storeRef.current;
