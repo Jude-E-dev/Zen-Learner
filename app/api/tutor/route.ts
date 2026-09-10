@@ -68,7 +68,11 @@ function fallback(reason: TutorFallback["reason"], hint: string) {
  * make casual misuse of the endpoint inconvenient.
  */
 function isAllowed(req: Request): boolean {
-  const secret = process.env.ZEN_TUTOR_SHARED_SECRET;
+  // The client can only ever read a NEXT_PUBLIC_-prefixed var (Next.js
+  // inlines those at build time), so accept either name here — an operator
+  // who sets only one of the two must not silently 403 every real request.
+  const secret =
+    process.env.ZEN_TUTOR_SHARED_SECRET || process.env.NEXT_PUBLIC_ZEN_TUTOR_SECRET;
   if (secret && req.headers.get("x-zen-tutor") !== secret) return false;
 
   const allowed = process.env.ZEN_TUTOR_ORIGIN;
