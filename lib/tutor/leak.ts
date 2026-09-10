@@ -381,12 +381,6 @@ function couldBeTheAnswer(fragment: string, question: Question): boolean {
 }
 
 /**
- * Check a tutor reply against the answer it must not give.
- *
- * `suspect` is not a synonym for `leaked`: the caller retries on both, but
- * only `leaked` means we actually recognised the answer in the text.
- */
-/**
  * Squash a string to its bare mathematical characters, for exact comparison.
  *
  * Whitespace, LaTeX delimiters and markup all go, so `x*e^x - e^x`,
@@ -424,6 +418,12 @@ function statedVerbatim(reply: string, question: Question): boolean {
   return squash(reply).includes(answer);
 }
 
+/**
+ * Check a tutor reply against the answer it must not give.
+ *
+ * `suspect` is not a synonym for `leaked`: the caller retries on both, but
+ * only `leaked` means we actually recognised the answer in the text.
+ */
 export function checkForLeak(reply: string, question: Question): LeakReport {
   const fragments = extractFragments(reply, question);
 
