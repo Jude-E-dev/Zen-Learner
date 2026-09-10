@@ -26,6 +26,8 @@
  * string.
  */
 
+import { memo, useMemo } from "react";
+
 import {
   defaultAvatar,
   resolvePalette,
@@ -342,8 +344,14 @@ function SceneText({
   );
 }
 
-/** One art pixel per viewBox unit. `.` is transparent. */
-export function PixelArt({
+/**
+ * One art pixel per viewBox unit. `.` is transparent.
+ *
+ * Memoized: these maps run to thousands of `<rect>`s, and Dojo's parent
+ * re-renders on a 100ms tick during timed drills — without this, that clock
+ * would reconcile the whole pixel-art tree ten times a second.
+ */
+export const PixelArt = memo(function PixelArt({
   map,
   palette,
   x,
@@ -374,10 +382,16 @@ export function PixelArt({
       )}
     </g>
   );
-}
+});
 
 
-export function Dojo({
+/**
+ * Memoized for the same reason as PixelArt below: `Play` (app/play/page.tsx)
+ * ticks a 100ms timer during timed drills, and without this every tick would
+ * re-reconcile the whole thousands-of-rects scene even when nothing here
+ * actually changed.
+ */
+export const Dojo = memo(function Dojo({
   mood,
   combo,
   award = null,
@@ -411,7 +425,10 @@ export function Dojo({
   className?: string;
 }) {
   const quiet = mood === "quiet";
-  const palette = { ...FIXED, ...resolvePalette(avatar, rankId) };
+  const palette = useMemo(
+    () => ({ ...FIXED, ...resolvePalette(avatar, rankId) }),
+    [avatar, rankId],
+  );
   const lit = combo >= 3;
 
   return (
@@ -636,4 +653,4 @@ export function Dojo({
       </svg>
     </div>
   );
-}
+});
