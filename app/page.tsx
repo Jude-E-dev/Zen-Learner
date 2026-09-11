@@ -204,21 +204,35 @@ export default function TopicSelect() {
   );
 }
 
-/** The authored bank has a real shape per tier. Height carries the count. */
+/**
+ * The authored bank has a real shape per tier. Height carries the count.
+ *
+ * Below 640px the bars give way to a one-line text summary rather than
+ * disappearing outright — the app otherwise only ever reflows, never hides
+ * content with no fallback. Both forms share one `aria-label` so a screen
+ * reader gets the same announcement regardless of breakpoint.
+ */
 function TierBars({ counts }: { counts: number[] }) {
   const max = Math.max(...counts, 1);
+  const summary = counts.map((count, i) => `${count} at tier ${i + 1}`).join(", ");
+
   return (
-    <div className="hidden items-end gap-1.5 sm:flex">
-      {counts.map((count, i) => (
-        <div key={i} className="flex flex-col items-center gap-1">
-          <span className="text-paper-dim text-label tabular-nums">{count}</span>
-          <span
-            className="bg-jade-deep w-5"
-            style={{ height: `${8 + (count / max) * 24}px` }}
-          />
-          <span className="text-paper-dim text-label tracking-widest">T{i + 1}</span>
-        </div>
-      ))}
+    <div role="img" aria-label={`Questions per tier: ${summary}`}>
+      <div aria-hidden="true" className="hidden items-end gap-1.5 sm:flex">
+        {counts.map((count, i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <span className="text-paper-dim text-label tabular-nums">{count}</span>
+            <span
+              className="bg-jade-deep w-5"
+              style={{ height: `${8 + (count / max) * 24}px` }}
+            />
+            <span className="text-paper-dim text-label tracking-widest">T{i + 1}</span>
+          </div>
+        ))}
+      </div>
+      <p aria-hidden="true" className="text-paper-dim text-label tracking-widest sm:hidden">
+        {counts.map((count, i) => `T${i + 1} ${count}`).join(" · ")}
+      </p>
     </div>
   );
 }
