@@ -584,6 +584,15 @@ export const Dojo = memo(function Dojo({
           sword would actually do between cuts.
         */}
         <g
+          /*
+           * Keyed on the award so a second correct answer inside the first
+           * strike's 480ms mood window remounts this group instead of
+           * reusing it. Without a key, `mood` never actually left "strike"
+           * (setMood("strike") on an already-"strike" state is a no-op), so
+           * `anim-lunge` never left and re-entered the DOM and the second
+           * strike played no animation at all — see TODOS.md's flurry entry.
+           */
+          key={award?.seq ?? "idle"}
           className={
             mood === "strike" ? "anim-lunge" : mood === "miss" ? "anim-flinch" : ""
           }
@@ -613,7 +622,9 @@ export const Dojo = memo(function Dojo({
           hand-made flash beside it read as a stray rectangle.
         */}
         {mood === "strike" && (
-          <g className="anim-arc">
+          // Keyed for the same reason as the lunge group above: a second
+          // strike inside the first one's window must remount to replay.
+          <g key={award?.seq ?? "idle"} className="anim-arc">
             <rect x="166" y="52" width="2" height="10" fill="var(--color-jade)" />
           </g>
         )}
