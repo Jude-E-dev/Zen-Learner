@@ -495,6 +495,28 @@ function Play() {
    */
   const showNeedsEvaluation = result?.needsEvaluation === true;
   const showUnreadable = result?.verdict === "unreadable" && !showNeedsEvaluation;
+  /*
+   * A correct answer's only feedback used to be the XP number and the strike,
+   * both inside the `aria-hidden` scene — a screen-reader user was told every
+   * time they were wrong and never told they were right.
+   *
+   * Can't key this off `result?.verdict === "correct"`: a correct submitAnswer
+   * moves straight into the next question in the same update ("no
+   * confirmation step" — session.ts's freshQuestion sets lastResult back to
+   * null), so `state.lastResult` is already null by the time this renders.
+   * `award` is the right signal instead — it's the same state the XP number
+   * and the strike animation already key off.
+   *
+   * `result === null` guards against a second bug this surfaced: a wrong or
+   * unreadable answer does NOT clear `award` (its effect below bails out
+   * early on a null `state.lastAward`), so without this check a miss inside
+   * the same ~700ms window would show "Correct" and "Not quite" at once.
+   * Every non-correct verdict leaves `state.lastResult` populated (only the
+   * correct path calls freshQuestion, which is what nulls it), so `result`
+   * being non-null reliably means "there's a fresher, non-correct outcome to
+   * show instead."
+   */
+  const showCorrect = award !== null && result === null;
   const inPause = state.phase === "paused" || state.phase === "revealed";
   // The armoury and the hint ladder both take the room's space and both want
   // the scene quiet behind them.
@@ -661,6 +683,11 @@ function Play() {
         />
 
         <div aria-live="polite" className="min-h-[1.5rem] text-sm">
+          {showCorrect && (
+            <span className="text-jade">
+              Correct. <span className="text-paper-dim">+{award!.xp} XP.</span>
+            </span>
+          )}
           {showMiss && (
             <span className="text-blood">
               Not quite.{" "}
