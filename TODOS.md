@@ -361,28 +361,10 @@ continuous flurry instead of the same pose flashing on and off.
 **Why:** The mental math drill is timed and a good streak lands answers a second apart or
 better, which is precisely when the animation stops working.
 
-**There is a concrete bug underneath this, and it should be fixed first, because it is most of
-the problem and costs nothing.** `app/play/page.tsx` sets `mood` to `"strike"` and schedules
-`setMood("idle")` 480ms later, keyed on `state.lastAward?.seq`. Answer again inside that window
-and the effect re-runs, clears the pending timer and sets `"strike"` again — but `mood` never
-left `"strike"`, so the `anim-lunge` class never leaves and re-enters the DOM and **the animation
-does not replay**.
+**The concrete bug underneath this is fixed** — see Completed below. This entry is now just the
+multi-frame flurry itself.
 
-Measured in a browser, answering twice about 300ms apart, reading `getAnimations()` off the
-lunge group:
-
-| when | animation currentTime |
-|---|---|
-| 150ms after the first answer | 117ms — playing |
-| 60ms after the second answer | 333ms — still the *first* one, not restarted |
-| 480ms | `[]` — finished, while the pose is still on screen |
-
-So the second strike of a fast pair produces no movement at all, and then a static lunge sits
-there until the mood expires. The fix is the pattern the same file already uses for the XP
-number: `key={award.seq}` on the animated group in `Dojo.tsx` remounts it and replays. Do that
-before drawing anything new.
-
-**Then the frames.** Two sources exist and neither needs new art: `Sprites/roning_attack.png`'s
+**The frames.** Two sources exist and neither needs new art: `Sprites/roning_attack.png`'s
 unused second pose, and `Sprites/Rough_ronin_with_straw_h-Sword_attacking_fro` (a full
 8-direction set of a different attack, already transcribed once before the arc sheet arrived, so
 the route is known to work). `scripts/sprites/ronin-attack.py` is parameterised by frame and
@@ -403,9 +385,8 @@ that is already several hundred lines. Two ways out, not equal:
 `prefers-reduced-motion` already cuts `anim-lunge` — a frame cycle is a new kind of motion and
 needs its own answer there, probably "hold one frame".
 
-**Effort:** M (the replay bug is a one-line fix and worth doing on its own even if no new frames
-ever land; the full flurry is larger)
-**Priority:** P2 (the replay bug) / P4 (the full multi-frame flurry)
+**Effort:** M
+**Priority:** P4
 **Depends on:** None
 
 ---
@@ -467,32 +448,6 @@ one system.
 
 **Effort:** M
 **Priority:** P3
-**Depends on:** None
-
-### Announce correct answers, not just wrong ones
-
-**What:** The live region in `app/play/page.tsx` only ever fills for miss, unreadable and
-needs-evaluation. A correct answer's entire feedback is the XP number and the strike, both
-inside the `aria-hidden` SVG.
-
-**Why:** A screen-reader user is told every time they are wrong and never told they are right —
-an accessibility gap, not a cosmetic one.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** None
-
-### Give TierBars a label and a sub-640px fallback
-
-**What:** `TierBars` is unlabelled and is the only content in the app dropped entirely below
-640px. It renders bare numerals over `T1`..`T5`, so it reads as "24 T1 6 T2" to a screen reader,
-and `hidden sm:flex` removes it with no fallback in a codebase that otherwise only ever reflows.
-
-**Why:** Both are accessibility/consistency gaps against the rest of the app's own pattern of
-reflowing rather than hiding content.
-
-**Effort:** S
-**Priority:** P2
 **Depends on:** None
 
 ### Converge on one panel padding and one Dojo height API
@@ -570,6 +525,55 @@ needs a real device/browser check.
 ---
 
 ## Completed
+
+### Give TierBars a label and a sub-640px fallback
+
+`TierBars` was unlabelled and was the only content in the app dropped entirely below 640px. It
+rendered bare numerals over `T1`..`T5`, so it read as "24 T1 6 T2" to a screen reader, and
+`hidden sm:flex` removed it with no fallback in a codebase that otherwise only ever reflows.
+
+Both the bar chart and a new mobile text summary ("T1 4 · T2 9 · ...") now share one
+`aria-label` so the announcement is the same regardless of breakpoint. Verified in a browser at
+375px (text fallback shows) and 1280px (bars still render).
+
+**Completed:** 2026-09-12
+
+### Announce correct answers, not just wrong ones
+
+The live region in `app/play/page.tsx` only ever filled for miss, unreadable and
+needs-evaluation. A correct answer's entire feedback was the XP number and the strike, both
+inside the `aria-hidden` SVG — a screen-reader user was told every time they were wrong and
+never told they were right.
+
+Two things this surfaced along the way, both fixed:
+- Can't key the new message off `result?.verdict === "correct"`: a correct `submitAnswer` moves
+  straight into the next question in the same update (`freshQuestion` resets `lastResult` to
+  null, "no confirmation step"), so `state.lastResult` is already null by the time this renders.
+  `award` is the right signal — the same state the XP number and strike animation already key
+  off.
+- A wrong or unreadable answer does not clear `award` (its effect bails out early on a null
+  `state.lastAward`), so without also checking `result === null`, a miss inside the same ~700ms
+  window showed "Correct" and "Not quite" at once. Found and fixed by testing the race live
+  against the dev server, not just by inspection.
+
+**Completed:** 2026-09-12
+
+### The strike animation replays on a fast correct-answer streak
+
+`app/play/page.tsx` sets `mood` to `"strike"` and schedules `setMood("idle")` 480ms later, keyed
+on `state.lastAward?.seq`. Answering again inside that window re-ran the effect and reset the
+timer, but `mood` never left `"strike"` — so the `anim-lunge`/`anim-arc` classes never left and
+re-entered the DOM, and the second strike of a fast pair played no animation at all.
+
+Fixed the same way the adjacent XP-number badge already handles this: `key={award.seq}` on both
+the lunge group and the arc cue forces a remount, which restarts the CSS animation.
+
+Precise before/after timing of the fix itself was hard to verify through browser automation (the
+480ms window is shorter than a CLI round-trip), so this rests on the fix being the exact,
+already-proven pattern used one prop over, plus the full test suite and typecheck passing clean.
+
+**Completed:** 2026-09-12 (the replay bug only — the larger multi-frame flurry is still open,
+see Animation above)
 
 ### Mental math drill
 
