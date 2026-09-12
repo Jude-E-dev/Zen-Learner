@@ -32,6 +32,8 @@ import { summaryUrl } from "@/lib/summary/permalink";
 import type { AvatarChoice } from "@/lib/game/avatar";
 import type { Question } from "@/lib/content/schema";
 import { masteryWithSession, downloadJsonl } from "@/lib/persistence/profile";
+import { RETAINED_SESSIONS } from "@/lib/persistence/store";
+import { clockTone, targetCaption } from "./clock";
 
 /**
  * Keyboard-first by construction. A learner should get through thirty questions
@@ -47,9 +49,45 @@ import { masteryWithSession, downloadJsonl } from "@/lib/persistence/profile";
 export default function PlayPage() {
   return (
     <Suspense fallback={null}>
-      <Play />
+      <PlayAfterMount />
     </Suspense>
   );
+}
+
+/**
+ * The drill starts on the client, and this gate is the reason.
+ *
+ * `Play` builds both its pool and its session in `useState` initializers, and a
+ * lazy initializer runs during render — the server render included. Mental math
+ * seeds its bank from `Date.now()` (`lib/content/drills.ts`) and `startSession`
+ * stamps the `session_start` event and `attemptStartedAt` from the same clock,
+ * so the server render and the hydrating client render disagreed about which
+ * questions the session held and about when it began. React discards the server
+ * HTML for a mismatched subtree and re-renders, which meant the first question a
+ * learner saw could flip between paint and hydration, and the clock's own zero
+ * point came from the wrong machine.
+ *
+ * It looked like a dev-only artifact for two reasons, and neither survives
+ * checking: only mental math showed it, because the calculus pool is a constant
+ * array, and only a cold document request showed it, because a client-side
+ * navigation never server-renders. SSR runs in production too.
+ *
+ * Nothing is lost by starting on the client. The whole drill is interactive
+ * client state — the pool, the session, the profile out of IndexedDB — so the
+ * server was rendering a session it was about to have thrown away. The cost is
+ * one empty frame, which the `Suspense fallback={null}` above could already
+ * produce.
+ *
+ * No test guards this. The repo has no component-render harness, and the defect
+ * only exists in the server/client render pair, which is precisely what a node
+ * test cannot see. It is verified in a browser instead: a cold load of
+ * `/play?drill=mental-math` must log no hydration error.
+ */
+function PlayAfterMount() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return <Play />;
 }
 
 function Play() {
@@ -432,8 +470,14 @@ function Play() {
           it.
         */}
         <h1 className="sr-only">
-          Zen Mode {drill.name.toLowerCase()} — session complete, {summary.accuracy}%
-          accuracy, rank {rank.current.name}
+          Zen Mode {drill.name.toLowerCase()} — session complete,{" "}
+          {/* Same call the card makes: with nothing answered there is no
+              accuracy, and announcing "0% accuracy" is a verdict the session
+              did not earn. */}
+          {summary.answered === 0
+            ? "nothing answered"
+            : `${summary.accuracy}% accuracy`}
+          , rank {rank.current.name}
         </h1>
         <SummaryCard
           summary={summary}
@@ -446,7 +490,7 @@ function Play() {
                   setInput("");
                 }}
                 autoFocus
-                className="focus-ring pixel-frame-hot text-jade bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:bg-ink-soft"
+                className="focus-ring btn-primary"
               >
                 GO AGAIN
               </button>
@@ -454,7 +498,7 @@ function Play() {
               <button
                 type="button"
                 onClick={() => void share()}
-                className="focus-ring pixel-frame text-paper-dim bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:border-gold hover:text-paper"
+                className="focus-ring btn-secondary"
               >
                 {copied ? "LINK COPIED" : "COPY SHARE LINK"}
               </button>
@@ -462,7 +506,7 @@ function Play() {
               <button
                 type="button"
                 onClick={() => router.push("/")}
-                className="focus-ring pixel-frame text-paper-dim bg-ink px-5 py-2 text-xs tracking-[0.2em] hover:border-gold hover:text-paper"
+                className="focus-ring btn-secondary"
               >
                 ◂ BACK TO THE HALL
               </button>
@@ -473,9 +517,13 @@ function Play() {
           <button
             type="button"
             onClick={() => void exportEvents().then(downloadJsonl)}
-            className="focus-ring text-paper-dim mx-auto text-label tracking-widest hover:text-paper"
+            className="focus-ring btn-quiet mx-auto"
           >
-            EXPORT EVENTS (.JSONL)
+            {/* Says the window, because the store rotates: events past the
+                most recent RETAINED_SESSIONS sessions are gone, and an export
+                that silently stopped covering session 1 would look like a bug
+                in the analytics rather than the retention it is. */}
+            EXPORT EVENTS · LAST {RETAINED_SESSIONS} SESSIONS (.JSONL)
           </button>
         )}
       </main>
@@ -484,6 +532,15 @@ function Play() {
 
   const q = state.current;
   if (!q) return null;
+
+  /*
+   * The band this question is being timed against, and the caption that names
+   * it. Null on an untimed drill, where neither is rendered — but both handle
+   * null anyway rather than relying on `drill.timed` and the registry agreeing
+   * forever.
+   */
+  const band = drill.targets(q.tier);
+  const caption = targetCaption(band);
 
   const result = state.lastResult;
   const showMiss = result?.verdict === "incorrect";
@@ -544,16 +601,16 @@ function Play() {
       <RankBar rank={rank} />
 
       {!durable && (
-        <p className="pixel-frame border-gold/50 bg-ink-soft text-gold px-4 py-2 text-xs">
+        <p className="pixel-frame-warn bg-ink-soft text-gold px-4 py-2 text-xs">
           Storage is blocked in this browser, so progress won&apos;t be saved after
           you close the tab. Everything else works normally.
         </p>
       )}
 
       <section
-        className={`pixel-frame bg-ink-soft shrink-0 p-6 ${showMiss ? "anim-miss" : ""}`}
+        className={`pixel-frame bg-ink-soft shrink-0 p-5 ${showMiss ? "anim-miss" : ""}`}
       >
-        <div className="text-paper-dim mb-3 flex items-center gap-3 text-label tracking-widest">
+        <div className="text-paper-dim mb-3 flex items-center gap-3 text-label tracking-label">
           <span>TIER {q.tier}</span>
           <span className="text-ink-line">|</span>
           <span className="uppercase">{q.subtopic}</span>
@@ -579,16 +636,31 @@ function Play() {
             The clock is the whole point of a speed drill, so it is on the
             question rather than tucked into the HUD. Tabular figures so the
             digits do not jitter as they climb.
+
+            The band comes from the question's own tier, not the selector's:
+            when a tier runs out of unseen questions the selector widens
+            outward (selector.ts) and serves a neighbour, and the clock has to
+            describe the question actually on screen.
           */}
           {drill.timed && (
-            <span
-              aria-hidden
-              className={`shrink-0 tabular-nums text-2xl leading-none ${
-                elapsed < 5000 ? "text-jade" : elapsed < 12000 ? "text-gold" : "text-paper-dim"
-              }`}
-            >
-              {(elapsed / 1000).toFixed(1)}s
-            </span>
+            <div className="shrink-0 text-right">
+              <span
+                aria-hidden
+                className={`block tabular-nums text-2xl leading-none ${clockTone(elapsed, band)}`}
+              >
+                {(elapsed / 1000).toFixed(1)}s
+              </span>
+              {/*
+                Quiet, and not aria-hidden the way the ticking number is: the
+                target is a fact about the question worth hearing once, while
+                the clock itself would be announced ten times a second.
+              */}
+              {caption && (
+                <span className="text-paper-mute mt-1 block text-label tracking-label">
+                  {caption}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </section>
@@ -615,9 +687,7 @@ function Play() {
           award={panelOpen ? null : award}
           avatar={profile.avatar}
           rankId={rank.current.id}
-          className={
-            armoury ? "h-28 shrink-0" : inPause ? "h-20 shrink-0" : "min-h-[7.5rem] grow"
-          }
+          size={armoury ? "band" : inPause ? "strip" : "fill"}
         />
 
         {panelOpen && (
@@ -722,7 +792,15 @@ function Play() {
           started, the browser's back button was the only exit.
         */}
         <div className="border-ink-line flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t-2 pt-3">
-          <p className="text-paper-dim text-label tracking-widest">
+          {/*
+            Hidden below `sm`, where there is no keyboard to press any of it.
+            Unlike the tier bars on the home page this gets no small-screen
+            fallback on purpose: a legend for keys a phone does not have is not
+            content being reflowed away, it is an instruction that cannot be
+            followed. The armoury button beside it is the one control on this
+            row a touch learner can actually use.
+          */}
+          <p className="text-paper-dim hidden text-label tracking-label sm:block">
             ENTER SUBMIT · SHIFT+ENTER I&apos;M STUCK · ESC END SESSION
           </p>
 
@@ -734,13 +812,14 @@ function Play() {
             is the only way off this screen that is not a keyboard shortcut,
             on the one route where a learner might be on a phone with no
             keyboard at all. The home page already renders this exact action
-            as `pixel-frame ... px-4 py-2 text-xs`; there was no reason for the
-            play route to render it as a caption.
+            as a secondary control; there was no reason for the play route to
+            render it as a caption. The 44px floor it was given by hand now
+            belongs to the tier, so both buttons get it.
           */}
           <button
             type="button"
             onClick={() => setArmoury(true)}
-            className="focus-ring pixel-frame text-paper-dim bg-ink min-h-11 px-4 py-2 text-xs tracking-widest hover:border-gold hover:text-paper"
+            className="focus-ring btn-secondary"
           >
             ARMOURY
           </button>

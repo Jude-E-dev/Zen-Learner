@@ -45,6 +45,21 @@
   --color-paper-ghost: #55524b; /* decorative only, never carries meaning */
 
   /*
+   * The same two, for gold and for ink, because the cleanup above did not
+   * finish. Seven more ad-hoc modifiers were still being invented per call
+   * site: `border-gold/50` and `/60` framing the same kind of warning in two
+   * files, `bg-ink/85` and `/90` ten lines apart in one component, plus
+   * `text-gold/70`, `bg-ink-line/50` and `border-ink-line/60`.
+   *
+   * gold-mute is the brightest of the gold values, not the average of them,
+   * because one of the three carried text: the rank that unlocks a locked
+   * swatch. Dimming it to the border values would have taken 10px type from
+   * 5.3:1 down to 3.4:1.
+   */
+  --color-gold-mute: #b2863a; /* 5.3:1 on ink-soft — still text */
+  --color-ink-scrim: rgb(14 15 20 / 0.9); /* ink, with the grind showing through */
+
+  /*
    * The rung numbers in the hint ladder.
    *
    * jade-deep is 2.41:1 — fine for the borders it was made for, unreadable as
@@ -88,6 +103,27 @@
    */
   --text-label: 0.625rem;
   --text-label--line-height: 1.6;
+
+  /*
+   * Three steps of letter-spacing, replacing six.
+   *
+   * This is the other half of the job `--text-label` started. Almost every
+   * string in the app is short and uppercase, so almost every string carries
+   * tracking — and it was picked per call site: `tracking-widest` in 29 places
+   * and four arbitrary values (`[0.2em]`, `[0.25em]`, `[0.3em]`, `[0.4em]`) in
+   * the rest, with `text-label` alone carrying five of them plus none.
+   *
+   * The three that survive are the three intents actually on screen. The
+   * collapsed pairs were a step apart, never a tier apart: 0.25em joined
+   * `title`, 0.4em joined `wordmark`.
+   *
+   * The one place with no tracking at all is the subtopic list on the home
+   * page, which is the app's only lowercase run of `text-label` type — caps
+   * need the air and a 60-character prose line does not.
+   */
+  --tracking-label: 0.1em; /* the default: captions, tags, headings at that weight */
+  --tracking-title: 0.2em; /* headings and controls that want the extra air */
+  --tracking-wordmark: 0.3em; /* ZEN MODE, and the banner line above a new rank */
 }
 
 :root {
@@ -114,6 +150,90 @@ body {
 .pixel-frame-hot {
   border: 2px solid var(--color-jade-deep);
   box-shadow: 4px 4px 0 0 var(--color-jade-deep);
+}
+
+/*
+ * Gold-framed: something the learner should read before carrying on, which is
+ * not the same thing as something having gone wrong. The offset block stays
+ * ink-soft — only the border changes, so the frame reads as a family member.
+ *
+ * A tier of its own rather than `pixel-frame border-gold/…` at the call site,
+ * which is how both consumers were written and which never worked: these rules
+ * are unlayered and Tailwind's utilities are inside `@layer utilities`, so
+ * `.pixel-frame`'s `border` shorthand beat the border-colour utility outright.
+ * Both warnings have been drawing ink-line grey. They are gold from here.
+ */
+.pixel-frame-warn {
+  border: 2px solid var(--color-gold-mute);
+  box-shadow: 4px 4px 0 0 var(--color-ink-soft);
+}
+
+/*
+ * Three tiers of control, where there were thirteen one-offs.
+ *
+ * Every button chose its own padding, size, tracking and hover treatment at
+ * its call site: five padding/size combinations and five different hover
+ * vocabularies for what is really one tier. The tell was the primary action —
+ * `px-6 py-3 text-base` on the home page, `px-5 py-2 text-xs` on the summary,
+ * the two most important buttons in the product at visibly different weights.
+ * A call site now picks a tier and stops making these decisions.
+ *
+ * The home page's weight is the one that won: BEGIN is the loudest thing on
+ * the front door and everything downstream of it is the same action again.
+ *
+ * The frame declarations are repeated from .pixel-frame / .pixel-frame-hot
+ * rather than composed, so a tier is one block you can read top to bottom —
+ * the same reason those two are written out rather than sharing a base.
+ */
+.btn-primary {
+  border: 2px solid var(--color-jade-deep);
+  box-shadow: 4px 4px 0 0 var(--color-jade-deep);
+  background: var(--color-ink);
+  color: var(--color-jade);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  letter-spacing: var(--tracking-title);
+}
+.btn-primary:hover {
+  background: var(--color-ink-soft);
+}
+
+/*
+ * `min-height` rather than more padding: the play route's exit was the one
+ * control given a 44px floor by hand, on the grounds that it is the only way
+ * off that screen without a keyboard. The same argument applies to every
+ * button at this tier, so the floor belongs to the tier.
+ */
+.btn-secondary {
+  border: 2px solid var(--color-ink-line);
+  box-shadow: 4px 4px 0 0 var(--color-ink-soft);
+  background: var(--color-ink);
+  color: var(--color-paper-dim);
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: var(--tracking-title);
+}
+.btn-secondary:hover {
+  border-color: var(--color-gold);
+  color: var(--color-paper);
+}
+
+/*
+ * No frame at all — the tier for a control that has to sit in a run of label
+ * type without interrupting it. One consumer today; it is here so the next
+ * bare-text control is not invented at its call site the way these all were.
+ */
+.btn-quiet {
+  color: var(--color-paper-dim);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  letter-spacing: var(--tracking-label);
+}
+.btn-quiet:hover {
+  color: var(--color-paper);
 }
 
 /*

@@ -33,21 +33,26 @@ function SharedSummary() {
 
   return (
     <Frame>
+      {/* A link can encode a session with nothing answered, and the card no
+          longer claims 0% for one, so neither does this. */}
       <h1 className="sr-only">
         A Zen Mode session shared with you — session {summary.sessionNumber},{" "}
-        {summary.accuracy}% accuracy at rank {summary.rankName}
+        {summary.answered === 0
+          ? "nothing answered"
+          : `${summary.accuracy}% accuracy`}{" "}
+        at rank {summary.rankName}
       </h1>
 
       <SummaryCard
         summary={summary}
         actions={
           <div className="flex flex-col items-center gap-3">
-            <p className="text-paper-dim text-label tracking-widest">
+            <p className="text-paper-dim text-label tracking-label">
               SOMEBODY ELSE&apos;S SESSION
             </p>
             <Link
               href="/"
-              className="focus-ring pixel-frame-hot text-jade bg-ink px-6 py-3 text-sm tracking-[0.2em] hover:bg-ink-soft"
+              className="focus-ring btn-primary"
             >
               TRY IT YOURSELF ▸
             </Link>
@@ -62,9 +67,9 @@ function BrokenLink() {
   return (
     <Frame>
       <div className="pixel-frame bg-ink-soft flex w-full max-w-[420px] flex-col gap-4 p-7">
-        <p className="font-bitmap text-jade text-label tracking-[0.3em]">ZEN MODE</p>
+        <p className="font-bitmap text-jade text-label tracking-wordmark">ZEN MODE</p>
 
-        <h1 className="font-bitmap text-gold text-2xl leading-tight tracking-widest">
+        <h1 className="font-bitmap text-gold text-2xl leading-tight tracking-label">
           This summary link is broken
         </h1>
 
@@ -81,7 +86,7 @@ function BrokenLink() {
 
         <Link
           href="/"
-          className="focus-ring pixel-frame-hot text-jade mt-2 self-start bg-ink px-6 py-3 text-sm tracking-[0.2em] hover:bg-ink-soft"
+          className="focus-ring btn-primary mt-2 self-start"
         >
           ENTER THE HALL ▸
         </Link>

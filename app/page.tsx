@@ -73,7 +73,7 @@ export default function TopicSelect() {
     <main className="mx-auto flex h-dvh max-w-5xl flex-col gap-4 overflow-y-auto px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <h1 className="font-bitmap text-jade text-4xl tracking-[0.2em]">ZEN MODE</h1>
+          <h1 className="font-bitmap text-jade text-4xl tracking-title">ZEN MODE</h1>
           <p className="text-paper-dim mt-2 text-sm">
             Two drills. Take the calculus slowly, or take the arithmetic fast.
           </p>
@@ -82,7 +82,7 @@ export default function TopicSelect() {
         {/* Someone who has been here before gets their standing back, not the
             pitch they already read. */}
         {ready && returning && (
-          <dl className="text-label flex items-end gap-6 tracking-widest">
+          <dl className="text-label flex items-end gap-6 tracking-label">
             <Stat label="RANK" value={rank.current.name} tone="text-indigo" />
             <Stat label="XP" value={profile.totalXp} tone="text-jade" />
             <Stat label="BEST STREAK" value={profile.bestStreak} tone="text-paper" />
@@ -149,18 +149,18 @@ export default function TopicSelect() {
                   */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-3">
-                      <h2 className="font-bitmap text-gold text-xl tracking-widest">
+                      <h2 className="font-bitmap text-gold text-xl tracking-label">
                         {drill.name}
                       </h2>
-                      <span className="text-paper-dim text-label tracking-widest">
+                      <span className="text-paper-dim text-label tracking-label">
                         {drill.size === null ? "ENDLESS" : `${drill.size} QUESTIONS`}
                       </span>
                       {drill.timed && (
-                        <span className="text-jade text-label tracking-widest">TIMED</span>
+                        <span className="text-jade text-label tracking-label">TIMED</span>
                       )}
                     </div>
                     <p className="text-paper-dim mt-1 text-sm">{drill.blurb}</p>
-                    <p className="text-paper-mute mt-1 text-label tracking-wide">
+                    <p className="text-paper-mute mt-1 text-label">
                       {drill.subtopics.join(" · ")}
                     </p>
                   </div>
@@ -176,7 +176,7 @@ export default function TopicSelect() {
                       /* Full width while the row is stacked, so the primary
                          action is the full-width thing it is everywhere else
                          on a phone rather than a 150px tab floating left. */
-                      className="focus-ring pixel-frame-hot text-jade bg-ink w-full px-6 py-3 text-base tracking-[0.2em] hover:bg-ink-soft sm:w-auto"
+                      className="focus-ring btn-primary w-full sm:w-auto"
                     >
                       {returning ? "CONTINUE ▸" : "BEGIN ▸"}
                     </button>
@@ -190,12 +190,20 @@ export default function TopicSelect() {
             <button
               type="button"
               onClick={() => setArmoury(true)}
-              className="focus-ring pixel-frame text-paper-dim bg-ink px-4 py-2 text-xs tracking-widest hover:border-gold hover:text-paper"
+              className="focus-ring btn-secondary"
             >
               ARMOURY
             </button>
-            <p className="text-paper-dim text-label tracking-widest">
-              ENTER STARTS THE HIGHLIGHTED DRILL · SHIFT+ENTER WHEN STUCK · ESC ENDS
+            {/*
+              Hidden below `sm`, where there is no keyboard for any of it. It
+              gets no small-screen fallback, unlike TierBars below: the bars
+              carry information a touch learner still wants, and a list of key
+              presses is an instruction a phone cannot follow. Every action it
+              names — starting the highlighted drill, the armoury — has a
+              button of its own.
+            */}
+            <p className="text-paper-dim hidden text-label tracking-label sm:block">
+              ENTER STARTS THE HIGHLIGHTED DRILL · ESC CLOSES THE ARMOURY
             </p>
           </div>
         </section>
@@ -226,11 +234,11 @@ function TierBars({ counts }: { counts: number[] }) {
               className="bg-jade-deep w-5"
               style={{ height: `${8 + (count / max) * 24}px` }}
             />
-            <span className="text-paper-dim text-label tracking-widest">T{i + 1}</span>
+            <span className="text-paper-dim text-label tracking-label">T{i + 1}</span>
           </div>
         ))}
       </div>
-      <p aria-hidden="true" className="text-paper-dim text-label tracking-widest sm:hidden">
+      <p aria-hidden="true" className="text-paper-dim text-label tracking-label sm:hidden">
         {counts.map((count, i) => `T${i + 1} ${count}`).join(" · ")}
       </p>
     </div>

@@ -89,18 +89,18 @@ function BannerOverlay({
     >
       {/* A rank is weeks of work paying off, so it gets the whole screen for a
           beat. Tier moves are frequent and stay quiet by comparison. */}
-      {big && <div key={`scrim-${visible.seq}`} className="anim-quiet absolute inset-0 bg-ink/85" />}
+      {big && <div key={`scrim-${visible.seq}`} className="anim-quiet absolute inset-0 bg-ink-scrim" />}
 
       <div
         key={visible.seq}
         className={`anim-quiet relative flex flex-col items-center ${
           big
             ? "pixel-frame-hot bg-ink gap-3 px-16 py-10"
-            : "pixel-frame bg-ink/90 gap-2 px-10 py-6"
+            : "pixel-frame bg-ink-scrim gap-2 px-10 py-6"
         }`}
       >
         <span
-          className={`tracking-[0.4em] ${
+          className={`tracking-wordmark ${
             visible.kind === "tier-down" ? "text-blood" : "text-jade"
           } ${big ? "text-sm" : "text-label"}`}
         >

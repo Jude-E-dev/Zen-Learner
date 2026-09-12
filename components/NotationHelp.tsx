@@ -9,8 +9,8 @@
  */
 export function NotationHelp({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <section className="anim-quiet pixel-frame bg-ink-soft border-gold/60 p-5">
-      <h2 className="text-gold mb-1 text-xs tracking-[0.2em]">HOW TO TYPE IT</h2>
+    <section className="anim-quiet pixel-frame-warn bg-ink-soft p-5">
+      <h2 className="text-gold mb-1 text-xs tracking-title">HOW TO TYPE IT</h2>
       <p className="text-paper-dim mb-4 text-xs">
         Nothing scored, nothing lost. This one is on the keyboard, not on you.
       </p>
@@ -35,7 +35,7 @@ export function NotationHelp({ onDismiss }: { onDismiss: () => void }) {
       <button
         type="button"
         onClick={onDismiss}
-        className="focus-ring pixel-frame text-paper mt-5 bg-ink px-3 py-1.5 text-xs tracking-widest hover:border-gold"
+        className="focus-ring btn-secondary mt-5"
       >
         GOT IT
       </button>
@@ -45,7 +45,7 @@ export function NotationHelp({ onDismiss }: { onDismiss: () => void }) {
 
 function Row({ want, type }: { want: string; type: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-ink-line/60 pb-1">
+    <div className="flex items-baseline justify-between gap-4 border-b border-ink-line pb-1">
       <dt className="text-paper-dim text-xs">{want}</dt>
       <dd className="text-jade">{type}</dd>
     </div>

@@ -51,7 +51,7 @@ export function AvatarPicker({
 
         return (
           <fieldset key={slot} className="flex flex-col gap-2">
-            <legend className="text-paper-dim text-label tracking-widest">
+            <legend className="text-paper-dim text-label tracking-label">
               {SLOT_LABELS[slot]}
               <span className="text-paper ml-3">{selected?.name ?? "—"}</span>
             </legend>
@@ -92,8 +92,8 @@ export function AvatarPicker({
                         looking, which is not how a reward should read. */}
                     <span
                       aria-hidden
-                      className={`text-label tracking-widest ${
-                        unlocked ? "text-paper-dim" : "text-gold/70"
+                      className={`text-label tracking-label ${
+                        unlocked ? "text-paper-dim" : "text-gold-mute"
                       }`}
                     >
                       {unlocked ? option.name.toUpperCase() : rankName(option.unlockedBy).toUpperCase()}

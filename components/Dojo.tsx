@@ -37,6 +37,43 @@ import {
 export type DojoMood = "idle" | "strike" | "miss" | "quiet";
 
 /**
+ * How much height the hall gets.
+ *
+ * `mood` arrived as a typed union and the height arrived as a free-form
+ * Tailwind string, so four call sites invented four heights between them with
+ * nothing on record saying which were deliberate. These are those four, named.
+ */
+export type DojoSize = "fill" | "strip" | "band" | "card";
+
+const HEIGHTS: Record<DojoSize, string> = {
+  /*
+   * `grow` with a floor.
+   *
+   * The hall is the only elastic child of an `h-dvh` column in which every
+   * other block is `shrink-0`, so it is the one thing that yields when the
+   * viewport runs short — and `min-h-0` on its parent removed even the content
+   * floor. On a 375x812 phone the home page's header and drill panel already
+   * exceed the viewport, so the hall was allotted exactly 0px: the ronin, the
+   * whole visual identity of the product and the thing the armoury lets you
+   * dress, rendered at zero height and vanished.
+   *
+   * A 3:1 scene below about 100px is a smear anyway, so this is the height
+   * under which there is no point drawing it at all.
+   */
+  fill: "min-h-[7.5rem] grow",
+  /*
+   * The deliberate strips, for when a panel below owns the screen. Working
+   * through a hint with the ronin off-screen loses the thing being talked
+   * about, so the hall keeps a sliver of itself either way — the hint ladder is
+   * the taller panel of the two, so it is the one that leaves the hall less.
+   */
+  strip: "h-20 shrink-0",
+  band: "h-28 shrink-0",
+  /* Whatever the shareable card's fixed square has left between its two ends. */
+  card: "h-32 shrink-0",
+};
+
+/**
  * Colours the learner cannot change: their own skin, the leather and wraps
  * that hold the kit together, and the room itself. Everything they can change
  * arrives through the resolved palette in lib/game/avatar.ts.
@@ -397,22 +434,7 @@ export const Dojo = memo(function Dojo({
   award = null,
   avatar = defaultAvatar(),
   rankId = "kensei",
-  /*
-   * `grow` with a floor.
-   *
-   * The hall is the only elastic child of an `h-dvh` column in which every
-   * other block is `shrink-0`, so it is the one thing that yields when the
-   * viewport runs short — and `min-h-0` on its parent removed even the
-   * content floor. On a 375x812 phone the home page's header and drill panel
-   * already exceed the viewport, so the hall was allotted exactly 0px: the
-   * ronin, the whole visual identity of the product and the thing the armoury
-   * lets you dress, rendered at zero height and vanished.
-   *
-   * A 3:1 scene below about 100px is a smear anyway, so this is the height
-   * under which there is no point drawing it at all. Pages that want the
-   * deliberate quiet strip pass their own height and are unaffected.
-   */
-  className = "min-h-[7.5rem] grow",
+  size = "fill",
 }: {
   mood: DojoMood;
   combo: number;
@@ -422,7 +444,8 @@ export const Dojo = memo(function Dojo({
   avatar?: AvatarChoice;
   /** Which rank the learner holds, so locked options fall back rather than render holes. */
   rankId?: string;
-  className?: string;
+  /** Which of the four named heights the hall draws at. See HEIGHTS above. */
+  size?: DojoSize;
 }) {
   const quiet = mood === "quiet";
   const palette = useMemo(
@@ -448,7 +471,7 @@ export const Dojo = memo(function Dojo({
         the frame and shows the page, which is the ground everything else on
         the page already sits on.
       */
-      className={`relative flex w-full items-end justify-center overflow-hidden ${className}`}
+      className={`relative flex w-full items-end justify-center overflow-hidden ${HEIGHTS[size]}`}
       data-testid="dojo"
     >
       <svg

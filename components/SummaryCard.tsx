@@ -44,13 +44,13 @@ export function SummaryCard({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-bitmap text-jade text-label tracking-[0.3em]">ZEN MODE</p>
-            <p className="text-paper-dim mt-1 text-label tracking-[0.2em]">
+            <p className="font-bitmap text-jade text-label tracking-wordmark">ZEN MODE</p>
+            <p className="text-paper-dim mt-1 text-label tracking-label">
               {drillName} · SESSION {sessionNumber}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-paper-dim text-label tracking-[0.2em]">RANK</p>
+            <p className="text-paper-dim text-label tracking-label">RANK</p>
             <p className="text-indigo text-lg leading-tight">{rankName}</p>
           </div>
         </div>
@@ -61,21 +61,44 @@ export function SummaryCard({
           combo={bestStreak}
           avatar={avatar}
           rankId={rankId}
-          className="h-32 shrink-0"
+          size="card"
         />
 
         <div className="flex items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-paper-dim text-label tracking-widest">ACCURACY</span>
-            <span className="font-bitmap text-gold text-6xl leading-none tabular-nums">
-              {accuracy}
-              {/* Monospace: Silkscreen's percent sign sits low against its own digits. */}
-              <span className="font-pixel text-2xl">%</span>
-            </span>
-            <span className="text-paper-dim text-xs">
-              {correct} of {answered} answered
-            </span>
-          </div>
+          {answered === 0 ? (
+            /*
+              A session ended with nothing answered has no accuracy, and the
+              card used to say `0%` at 6xl anyway — the largest thing on the
+              screen, reading as a verdict on the learner when the honest
+              reading is "there is nothing here to report". The number is not
+              faked or hidden: it is dropped, because it does not exist, and
+              what replaces it is the same size as the cells below rather than
+              a headline.
+            */
+            <div className="flex flex-col gap-1">
+              <span className="text-paper-dim text-label tracking-label">
+                THIS SESSION
+              </span>
+              <span className="font-bitmap text-paper text-2xl leading-none tracking-label">
+                NOTHING SCORED
+              </span>
+              <span className="text-paper-dim text-xs">
+                Ended before a question was answered. Nothing lost.
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              <span className="text-paper-dim text-label tracking-label">ACCURACY</span>
+              <span className="font-bitmap text-gold text-6xl leading-none tabular-nums">
+                {accuracy}
+                {/* Monospace: Silkscreen's percent sign sits low against its own digits. */}
+                <span className="font-pixel text-2xl">%</span>
+              </span>
+              <span className="text-paper-dim text-xs">
+                {correct} of {answered} answered
+              </span>
+            </div>
+          )}
 
           {/*
             On a timed drill the times are the headline beside accuracy —
@@ -83,14 +106,14 @@ export function SummaryCard({
             get the corner when there is no clock to report.
           */}
           {times ? (
-            <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-widest">
+            <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-label">
               FASTEST <span className="text-jade">{secs(times.fastest)}</span>
               <br />
               TYPICAL <span className="text-paper">{secs(times.median)}</span>
             </p>
           ) : (
             pauses > 0 && (
-              <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-widest">
+              <p className="text-paper-dim text-label pb-1 text-right leading-relaxed tracking-label">
                 PAUSED {pauses}×
                 <br />
                 GOT UNSTUCK {unstuck}×
@@ -122,7 +145,7 @@ function Cell({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-paper-dim text-label tracking-widest">{label}</dt>
+      <dt className="text-paper-dim text-label tracking-label">{label}</dt>
       <dd className={`${tone} text-2xl leading-none tabular-nums`}>{value}</dd>
     </div>
   );

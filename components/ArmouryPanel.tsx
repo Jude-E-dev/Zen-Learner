@@ -27,8 +27,8 @@ export function ArmouryPanel({
   return (
     <section className="pixel-frame bg-ink-soft shrink-0 p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="font-bitmap text-gold text-lg tracking-widest">ARMOURY</h2>
-        <p className="text-paper-dim text-label tracking-widest">{note}</p>
+        <h2 className="font-bitmap text-gold text-lg tracking-label">ARMOURY</h2>
+        <p className="text-paper-dim text-label tracking-label">{note}</p>
       </div>
 
       <AvatarPicker
@@ -40,7 +40,7 @@ export function ArmouryPanel({
       <button
         type="button"
         onClick={onClose}
-        className="focus-ring pixel-frame text-paper mt-5 bg-ink px-4 py-2 text-xs tracking-widest hover:border-gold"
+        className="focus-ring btn-secondary mt-5"
       >
         DONE
       </button>

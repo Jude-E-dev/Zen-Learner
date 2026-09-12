@@ -52,11 +52,11 @@ export function PausePanel({
   return (
     <section className="anim-quiet pixel-frame-hot bg-ink-soft p-5">
       <div className="mb-4 flex items-baseline justify-between">
-        <h2 className="text-jade text-xs tracking-[0.2em]">
+        <h2 className="text-jade text-xs tracking-title">
           {revealed ? "THE WHOLE PATH" : "PAUSED"}
         </h2>
         {!revealed && (
-          <span className="text-paper-dim text-label tracking-widest">
+          <span className="text-paper-dim text-label tracking-label">
             RUNG {state.hintRung} / {MAX_HINT_RUNG}
           </span>
         )}
@@ -146,7 +146,7 @@ export function PausePanel({
           imposed; showing the last two reads as a heads-up.
         */}
         {!revealed && remaining <= 2 && (
-          <span className="text-label tracking-widest">
+          <span className="text-label tracking-label">
             {remaining === 0
               ? "AUTHORED HINTS ONLY TODAY"
               : `${remaining} TUTORED ${remaining === 1 ? "PAUSE" : "PAUSES"} LEFT TODAY`}

@@ -38,7 +38,7 @@ export function Hud({
         <span className="text-gold text-lg">{selector.tier}</span>
         <span className="text-paper-dim">/{MAX_TIER}</span>
         {selector.atCap && (
-          <span className="text-jade ml-2 text-label tracking-widest">AT CAP</span>
+          <span className="text-jade ml-2 text-label tracking-label">AT CAP</span>
         )}
       </Stat>
 
@@ -79,7 +79,7 @@ export function Hud({
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-paper-dim text-label tracking-widest">{label}</span>
+      <span className="text-paper-dim text-label tracking-label">{label}</span>
       <span className="leading-none">{children}</span>
     </div>
   );
@@ -102,7 +102,7 @@ function Gate({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-paper-dim text-label tracking-widest">
+      <span className="text-paper-dim text-label tracking-label">
         {disabled ? `${label} (—)` : label}
       </span>
       <div className="flex gap-1">
