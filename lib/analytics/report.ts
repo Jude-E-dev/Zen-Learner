@@ -319,6 +319,17 @@ export function buildReport(rows: Row[], skipped = 0): AnalyticsReport {
       `Only ${sessions.length} session(s) recorded — the novelty question needs 5 to answer as posed.`,
     );
   }
+  /*
+   * The event store rotates, keeping only the most recent sessions, so an
+   * export from a long-lived profile can simply not contain session 1. Worth
+   * saying: `retention.first` falls back to the earliest session present, and a
+   * reader would otherwise take that for the learner's first ever run.
+   */
+  if (retention.first && retention.first.session !== 1) {
+    notes.push(
+      `Session 1 is not in this export — the earliest kept is session ${retention.first.session}, so "first" means earliest still stored, not first ever.`,
+    );
+  }
   if (pause.retries.afterPause.attempts < 10) {
     notes.push(
       `Only ${pause.retries.afterPause.attempts} post-pause retries — too few to read the rate as anything but a hint.`,

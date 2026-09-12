@@ -309,6 +309,28 @@ describe("the report's own honesty", () => {
     expect(report.notes.join(" ")).toMatch(/no baseline/);
   });
 
+  /*
+   * The event store rotates, so an export from a long-lived profile may not
+   * contain session 1 at all. `retention.first` falls back to the earliest
+   * session present, and the report has to say so rather than let it pass for
+   * the learner's first ever run.
+   */
+  it("says when session 1 has rotated out of the export", () => {
+    clock = 0;
+    const report = buildReport([
+      ...rows(12, [served("q1"), answer("q1", "correct")]),
+      ...rows(13, [served("q2"), answer("q2", "correct")]),
+    ]);
+    expect(report.retention.first?.session).toBe(12);
+    expect(report.notes.join(" ")).toMatch(/Session 1 is not in this export/);
+  });
+
+  it("says nothing of the sort when session 1 is right there", () => {
+    clock = 0;
+    const report = buildReport(rows(1, [served("q1"), answer("q1", "correct")]));
+    expect(report.notes.join(" ")).not.toMatch(/Session 1 is not in this export/);
+  });
+
   it("surfaces skipped lines in the notes", () => {
     expect(buildReport([], 4).notes.join(" ")).toMatch(/4 unparseable/);
   });

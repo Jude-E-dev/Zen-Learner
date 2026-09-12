@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import { loadAll } from "../content/load";
 import { startSession, submitAnswer } from "../game/session";
 import { rankFor, statsAtOrAbove } from "../game/ranks";
-import { emptyProfile, memoryStore, migrate, PROFILE_VERSION } from "./store";
+import {
+  emptyProfile,
+  memoryStore,
+  migrate,
+  PROFILE_VERSION,
+  RETAINED_SESSIONS,
+  retentionCutoff,
+  type Store,
+} from "./store";
+import type { GameEvent } from "../game/events";
 import { defaultAvatar } from "../game/avatar";
 import { mergeSession, toJsonl } from "./profile";
 import { localDay } from "../tutor/quota";
@@ -45,6 +54,143 @@ describe("store — the memory fallback", () => {
     await store.clear();
     expect((await store.loadProfile()).totalXp).toBe(0);
     expect(await store.readEvents()).toHaveLength(0);
+  });
+});
+
+/**
+ * Nothing used to remove an event, so the store grew for the life of the
+ * browser profile and eventually competed with the progress record for the
+ * origin's storage quota. These pin the ring buffer: bounded, newest-kept, and
+ * never holding half a session — a session cut across the boundary would still
+ * be summarised as a session and would quietly flatten the novelty curve.
+ */
+describe("events — rotation keeps the store bounded", () => {
+  const EVENTS_PER_SESSION = 5;
+
+  async function play(store: Store, session: number) {
+    const base = session * 1_000_000;
+    const events: GameEvent[] = [{ type: "session_start", ts: base }];
+    for (let i = 0; i < EVENTS_PER_SESSION - 2; i++) {
+      events.push({
+        type: "answer_submitted",
+        ts: base + i,
+        questionId: `q${i}`,
+        tier: 1,
+        verdict: "correct",
+        latencyMs: 1000,
+        afterPause: false,
+      });
+    }
+    events.push({ type: "session_end", ts: base + 999, answered: 3, correct: 3, xp: 30 });
+    await store.appendEvents(session, events);
+  }
+
+  async function playThrough(last: number) {
+    const store = memoryStore();
+    for (let session = 1; session <= last; session++) await play(store, session);
+    return store.readEvents();
+  }
+
+  const sessionsIn = (rows: { session: number }[]) => [...new Set(rows.map((r) => r.session))];
+
+  it("keeps every session while the learner is under the cap", async () => {
+    const rows = await playThrough(RETAINED_SESSIONS);
+    expect(sessionsIn(rows)).toHaveLength(RETAINED_SESSIONS);
+    expect(rows).toHaveLength(RETAINED_SESSIONS * EVENTS_PER_SESSION);
+  });
+
+  it("stays bounded however long the learner keeps playing", async () => {
+    const rows = await playThrough(RETAINED_SESSIONS * 3);
+    expect(sessionsIn(rows)).toHaveLength(RETAINED_SESSIONS);
+    expect(rows).toHaveLength(RETAINED_SESSIONS * EVENTS_PER_SESSION);
+  });
+
+  it("drops the oldest sessions and keeps the newest", async () => {
+    const last = RETAINED_SESSIONS + 7;
+    const sessions = sessionsIn(await playThrough(last));
+    expect(Math.max(...sessions)).toBe(last);
+    expect(Math.min(...sessions)).toBe(last - RETAINED_SESSIONS + 1);
+    expect(sessions).not.toContain(1);
+  });
+
+  it("never keeps half a session, least of all the one on the boundary", async () => {
+    const rows = await playThrough(RETAINED_SESSIONS + 7);
+    const counts = new Map<number, number>();
+    for (const row of rows) counts.set(row.session, (counts.get(row.session) ?? 0) + 1);
+
+    for (const [session, count] of counts) {
+      expect(count, `session ${session} was cut short`).toBe(EVENTS_PER_SESSION);
+    }
+    // The oldest retained session is the one rotation stopped at — whole.
+    expect(counts.get(Math.min(...counts.keys()))).toBe(EVENTS_PER_SESSION);
+  });
+
+  it("keeps the whole window readable in session order", async () => {
+    const rows = await playThrough(RETAINED_SESSIONS + 2);
+    const order = rows.map((r) => r.session);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  /*
+   * The session number is the unit, not the batch. A session that commits its
+   * events in two batches must still count once, or a chatty session would
+   * evict older ones that are still inside the window.
+   */
+  it("counts a session once even when its events arrive in several batches", async () => {
+    const store = memoryStore();
+    for (let session = 1; session <= RETAINED_SESSIONS; session++) await play(store, session);
+    await store.appendEvents(RETAINED_SESSIONS, [{ type: "session_start", ts: 1 }]);
+    await store.appendEvents(RETAINED_SESSIONS, [{ type: "session_start", ts: 2 }]);
+
+    const rows = await store.readEvents();
+    expect(sessionsIn(rows)).toHaveLength(RETAINED_SESSIONS);
+    expect(sessionsIn(rows)).toContain(1);
+  });
+
+  it("rotates on the shared rule rather than one of the fallback's own", async () => {
+    const last = RETAINED_SESSIONS + 4;
+    const rows = await playThrough(last);
+    const played = Array.from({ length: last }, (_, i) => i + 1);
+    expect(Math.min(...rows.map((r) => r.session))).toBe(retentionCutoff(played));
+  });
+
+  it("appending nothing neither rotates nor records a session", async () => {
+    const store = memoryStore();
+    await play(store, 1);
+    await store.appendEvents(2, []);
+    expect(sessionsIn(await store.readEvents())).toEqual([1]);
+  });
+
+  it("leaves the session-1 vs session-5 comparison intact, which is the point", async () => {
+    const sessions = sessionsIn(await playThrough(RETAINED_SESSIONS));
+    expect(sessions).toContain(1);
+    expect(sessions).toContain(5);
+  });
+});
+
+describe("retentionCutoff — which sessions age out", () => {
+  it("drops nothing at or under the cap", () => {
+    expect(retentionCutoff([], 3)).toBeNull();
+    expect(retentionCutoff([1, 2, 3], 3)).toBeNull();
+  });
+
+  it("names the oldest session to keep once the cap is passed", () => {
+    expect(retentionCutoff([1, 2, 3, 4, 5], 3)).toBe(3);
+  });
+
+  it("counts sessions, not events, so a long session does not evict others", () => {
+    expect(retentionCutoff([1, 1, 1, 1, 1, 2, 2, 2], 3)).toBeNull();
+  });
+
+  it("works on session numbers with gaps, without assuming they are contiguous", () => {
+    // A store whose earlier sessions were already rotated away, or a profile
+    // whose counter ran ahead of the events it kept.
+    expect(retentionCutoff([9, 3, 40, 12], 2)).toBe(12);
+  });
+
+  it("defaults to the retention window the store actually uses", () => {
+    const many = Array.from({ length: RETAINED_SESSIONS + 1 }, (_, i) => i + 1);
+    expect(retentionCutoff(many)).toBe(2);
   });
 });
 

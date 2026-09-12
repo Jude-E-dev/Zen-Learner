@@ -49,12 +49,52 @@ export interface StoredEvent {
   event: GameEvent;
 }
 
+/**
+ * How many sessions of events the store keeps.
+ *
+ * Nothing else ever removes an event, so uncapped the store grows for the life
+ * of the browser profile and ends up competing with the progress record for the
+ * origin's storage quota. Eviction is origin-wide and does not spare the
+ * profile, so losing that fight costs the learner their rank and streak —
+ * rotating here keeps the only data at risk the kind that regenerates by
+ * playing.
+ *
+ * Fifty is well clear of what the live hypothesis needs: the session-1 vs
+ * session-5 comparison (design doc #7) holds until a fifty-first session
+ * exists, long after that question has been answered.
+ */
+export const RETAINED_SESSIONS = 50;
+
+/**
+ * The oldest session number still worth keeping, or null when nothing is over
+ * the cap.
+ *
+ * Rotation counts sessions, never rows: half a session still reads as a whole
+ * session to the report, which would describe a thirty-question run as a
+ * four-question one and dent exactly the curve these events exist to measure.
+ * Sessions age out whole or not at all.
+ *
+ * Session numbers come from the profile's own counter, so they arrive in order;
+ * this sorts anyway rather than assuming it, because the only cost is on a list
+ * that is already bounded and the failure mode would be deleting the wrong end.
+ */
+export function retentionCutoff(
+  sessions: number[],
+  keep = RETAINED_SESSIONS,
+): number | null {
+  const distinct = [...new Set(sessions)].sort((a, b) => a - b);
+  if (distinct.length <= keep) return null;
+  return distinct[distinct.length - keep];
+}
+
 export interface Store {
   /** True when writes actually survive a reload. */
   readonly durable: boolean;
   loadProfile(): Promise<Profile>;
   saveProfile(profile: Profile): Promise<void>;
+  /** Appends a batch, then rotates everything past RETAINED_SESSIONS away. */
   appendEvents(session: number, events: GameEvent[]): Promise<void>;
+  /** The retained window, oldest first — not necessarily from session 1. */
   readEvents(): Promise<StoredEvent[]>;
   clear(): Promise<void>;
 }
@@ -73,7 +113,14 @@ export function memoryStore(): Store {
       profile = next;
     },
     async appendEvents(session, batch) {
-      events = [...events, ...batch.map((event) => ({ session, event }))];
+      const next = [...events, ...batch.map((event) => ({ session, event }))];
+      /*
+       * The fallback rotates on the same rule as the durable store. If it did
+       * not, readEvents() would mean two different things depending on the
+       * browser, and every test in this repo drives the lenient one.
+       */
+      const cutoff = retentionCutoff(next.map((row) => row.session));
+      events = cutoff === null ? next : next.filter((row) => row.session >= cutoff);
     },
     async readEvents() {
       return events;
@@ -148,6 +195,11 @@ const PROFILE_STORE = "profile";
 const EVENT_STORE = "events";
 const PROFILE_KEY = "singleton";
 
+/** What the events store actually holds: a StoredEvent plus its in-line key. */
+interface EventRow extends StoredEvent {
+  id: number;
+}
+
 /**
  * Probe IndexedDB by actually opening it rather than checking for the global.
  * Private-browsing modes expose `indexedDB` and then reject the open, so
@@ -180,10 +232,33 @@ export async function createStore(): Promise<Store> {
       async saveProfile(profile) {
         await db.put(PROFILE_STORE, profile, PROFILE_KEY);
       },
+      /**
+       * Append, then rotate — in one transaction, so the cap is never briefly
+       * untrue and a failure takes both halves with it rather than leaving a
+       * write that never got pruned. Session commit is the only writer, so this
+       * is also where a store that predates the cap gets trimmed: on the first
+       * session finished after this ships, however many are backed up.
+       *
+       * The rows are read rather than reached through an index on `session`,
+       * because an index means a DB_VERSION bump against profiles that already
+       * exist, and this pass runs once per session over a set it is itself
+       * keeping bounded. Deleting rows needs no schema change, so the version
+       * stays where it is.
+       */
       async appendEvents(session, batch) {
         const tx = db.transaction(EVENT_STORE, "readwrite");
+        const stored = (await tx.store.getAll()) as EventRow[];
+
+        const sessions = stored.map((row) => row.session);
+        // An empty batch records no session, so it must not claim one.
+        if (batch.length > 0) sessions.push(session);
+        const cutoff = retentionCutoff(sessions);
+        const stale =
+          cutoff === null ? [] : stored.filter((row) => row.session < cutoff);
+
         await Promise.all([
           ...batch.map((event) => tx.store.add({ session, event })),
+          ...stale.map((row) => tx.store.delete(row.id)),
           tx.done,
         ]);
       },
