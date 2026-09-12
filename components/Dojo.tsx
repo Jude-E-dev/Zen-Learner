@@ -583,37 +583,48 @@ export const Dojo = memo(function Dojo({
           sprite carries its sword sheathed, which is what a ronin with one
           sword would actually do between cuts.
         */}
-        <g
-          /*
-           * Keyed on the award so a second correct answer inside the first
-           * strike's 480ms mood window remounts this group instead of
-           * reusing it. Without a key, `mood` never actually left "strike"
-           * (setMood("strike") on an already-"strike" state is a no-op), so
-           * `anim-lunge` never left and re-entered the DOM and the second
-           * strike played no animation at all — see TODOS.md's flurry entry.
-           */
-          key={award?.seq ?? "idle"}
-          className={
-            mood === "strike" ? "anim-lunge" : mood === "miss" ? "anim-flinch" : ""
-          }
-        >
-          {mood === "strike" ? (
+        {/*
+          The strike gets its own slot, keyed on the award, so it remounts per
+          hit and the animation replays.
+
+          Why a remount is needed at all: `setMood("strike")` on an
+          already-"strike" state is a no-op, so a second correct answer inside
+          the first strike's 480ms window leaves `anim-lunge` on the same DOM
+          node and a CSS animation does not restart without the element
+          leaving and re-entering.
+
+          Why the first attempt at this failed is the part worth keeping.
+          Three sibling groups in this svg — the ronin, the jade arc, the XP
+          number — were each keyed on the bare `award.seq`, so all three
+          carried key `1` at the same time. React logged "Encountered two
+          children with the same key" and, in its own words, duplicate keys
+          make the behaviour unsupported: the keys changed 1 -> 2 and nothing
+          remounted. Measured 75ms then 342ms on one continuous clock, i.e.
+          the second strike played nothing at all.
+
+          The fix is that the keys are now distinct per slot (`strike-N`,
+          `arc-N`, and the XP number's bare seq), not that the shape changed.
+          Keep the prefixes if you add another award-keyed sibling here.
+          Re-measured after: 67ms then 17ms, and the console is clean.
+        */}
+        {mood === "strike" ? (
+          <g key={`strike-${award?.seq ?? 0}`} className="anim-lunge">
             <PixelArt map={RONIN_ATTACK} palette={palette} x={110} y={2} />
-          ) : (
-            <>
-              {/*
-                Drawn before the torso and overlapping it by OVERLAP rows, so
-                the breath lifts the torso off real hakama rather than off a
-                hole. An earlier version butted the two halves edge to edge and
-                a 2px lift opened a transparent line straight across the hips.
-              */}
-              <PixelArt map={RONIN_LOWER} palette={palette} x={110} y={54} />
-              <g className="anim-breathe">
-                <PixelArt map={RONIN_UPPER} palette={palette} x={110} y={16} />
-              </g>
-            </>
-          )}
-        </g>
+          </g>
+        ) : (
+          <g key="at-rest" className={mood === "miss" ? "anim-flinch" : ""}>
+            {/*
+              Drawn before the torso and overlapping it by OVERLAP rows, so
+              the breath lifts the torso off real hakama rather than off a
+              hole. An earlier version butted the two halves edge to edge and
+              a 2px lift opened a transparent line straight across the hips.
+            */}
+            <PixelArt map={RONIN_LOWER} palette={palette} x={110} y={54} />
+            <g className="anim-breathe">
+              <PixelArt map={RONIN_UPPER} palette={palette} x={110} y={16} />
+            </g>
+          </g>
+        )}
 
         {/*
           The jade cue, at the height the arc actually crosses the post
@@ -621,10 +632,15 @@ export const Dojo = memo(function Dojo({
           here is gone: the strike sprite draws its own arc, and a second
           hand-made flash beside it read as a stray rectangle.
         */}
+        {/*
+          `arc-` prefixed for the reason spelled out on the ronin above: this
+          cue used to share the bare `award.seq` key with two siblings, which
+          is the duplicate-key case React calls unsupported, and it showed the
+          same symptom — 17ms then 308ms on one clock, no replay on a second
+          strike. With a distinct key it remounts: 17ms then 0ms.
+        */}
         {mood === "strike" && (
-          // Keyed for the same reason as the lunge group above: a second
-          // strike inside the first one's window must remount to replay.
-          <g key={award?.seq ?? "idle"} className="anim-arc">
+          <g key={`arc-${award?.seq ?? 0}`} className="anim-arc">
             <rect x="166" y="52" width="2" height="10" fill="var(--color-jade)" />
           </g>
         )}
