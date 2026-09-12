@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateMentalMath, MENTAL_SUBTOPICS } from "./mental";
+import { generateMentalMath, mentalTargets, MENTAL_SUBTOPICS } from "./mental";
 import { QuestionSchema } from "./schema";
 import { checkAnswer } from "../equivalence/check";
 
@@ -338,5 +338,51 @@ describe("mental math — the sum is not an answer", () => {
     // The flag is per question, not global. Nothing in the authored bank sets
     // it, and this is the behaviour that must not regress.
     expect(wide.every((q) => q.requireEvaluated)).toBe(true);
+  });
+});
+
+describe("mental math — the clock has something to aim at", () => {
+  const tiers = [1, 2, 3, 4, 5];
+
+  it("gives every tier a band", () => {
+    for (const tier of tiers) {
+      const { target, slow } = mentalTargets(tier);
+      expect(target, `tier ${tier} target`).toBeGreaterThan(0);
+      expect(slow, `tier ${tier} slow`).toBeGreaterThan(target);
+    }
+  });
+
+  it("asks for more time as the tier climbs", () => {
+    // The point of the band. A flat threshold called `7 + 8` in four seconds
+    // and `49 × 29` in four seconds the same thing, and they are not.
+    const targets = tiers.map((tier) => mentalTargets(tier).target);
+    for (let i = 1; i < targets.length; i++) {
+      expect(targets[i], `tier ${i + 1} vs ${i}`).toBeGreaterThan(targets[i - 1]);
+    }
+  });
+
+  it("clamps a tier from outside the ladder instead of blanking the clock", () => {
+    // Tier reaches this from a stored profile, so a 0 or a 6 is data, not a
+    // bug, and an undefined band would silently stop the clock colouring.
+    expect(mentalTargets(0)).toEqual(mentalTargets(1));
+    expect(mentalTargets(-3)).toEqual(mentalTargets(1));
+    expect(mentalTargets(6)).toEqual(mentalTargets(5));
+    expect(mentalTargets(2.7)).toEqual(mentalTargets(2));
+  });
+
+  it("keeps tier 1 inside the old flat threshold and tier 5 outside it", () => {
+    // The band it replaces was 5s fast / 12s slow for every tier. Tier 1 was
+    // too generous and tier 5 too harsh, which is the whole finding.
+    expect(mentalTargets(1).target).toBeLessThan(5000);
+    expect(mentalTargets(5).target).toBeGreaterThan(5000);
+  });
+
+  it("only the timed drill has a band", async () => {
+    const { DRILLS } = await import("./drills");
+    for (const drill of DRILLS) {
+      const band = drill.targets(3);
+      if (drill.timed) expect(band, drill.id).not.toBeNull();
+      else expect(band, drill.id).toBeNull();
+    }
   });
 });

@@ -494,3 +494,45 @@ export function generateMentalMath(seed = Date.now(), perTier = 40): Question[] 
 
   return out;
 }
+
+/**
+ * Per-question target times, in milliseconds, by tier.
+ *
+ * The clock used to colour itself against one flat pair of thresholds for
+ * every tier, so "fast" meant five seconds whether the question was `7 + 8` or
+ * `49 × 29`. A tier-5 answer inside five seconds is exceptional and a tier-1
+ * answer at four is slow; the flat band called both of them the same thing,
+ * and it only started meaning anything once a learner had a personal baseline
+ * to compare against.
+ *
+ * These are the time the method in each tier's own hints takes when you know
+ * it: one step at tier 1, a carry or a table fact at tiers 2 and 3, a
+ * decomposition at tier 4, and two partial products plus an addition at
+ * tier 5. They are a starting band, not a measurement. The honest version of
+ * this table is each learner's own median per tier, which the analytics events
+ * already record — replace these from that data rather than tuning them by
+ * feel.
+ */
+const TARGET_MS: readonly number[] = [3000, 4000, 5000, 7000, 10000];
+
+export interface TimeTargets {
+  /** At or under this, the answer was fast. */
+  target: number;
+  /** Past this, the answer reads as slow. */
+  slow: number;
+}
+
+/**
+ * The band for a tier.
+ *
+ * `slow` is twice `target` rather than a second table: the flat band it
+ * replaces was 5s and 12s, a ratio of about two, and one number per tier is
+ * one number to get wrong instead of two. Tiers outside 1..5 clamp instead of
+ * returning undefined, because a tier is data that reaches here from a stored
+ * profile and a missing band would blank the clock rather than fail loudly.
+ */
+export function mentalTargets(tier: number): TimeTargets {
+  const index = Math.min(Math.max(Math.trunc(tier), 1), TARGET_MS.length) - 1;
+  const target = TARGET_MS[index];
+  return { target, slow: target * 2 };
+}

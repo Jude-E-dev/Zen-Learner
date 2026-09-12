@@ -1,5 +1,6 @@
 import questionData from "./generated.json";
-import { generateMentalMath, MENTAL_SUBTOPICS } from "./mental";
+import { generateMentalMath, mentalTargets, MENTAL_SUBTOPICS } from "./mental";
+import type { TimeTargets } from "./mental";
 import type { Question, Topic } from "./schema";
 
 /**
@@ -34,6 +35,13 @@ export interface Drill {
    * instead: a clock while you answer, and your times on the card at the end.
    */
   timed: boolean;
+  /**
+   * The per-question time band for a tier, or null when the drill is not
+   * about speed. Paired with `timed` so the play screen reads the band from
+   * the drill it is already holding and never learns which drill it is
+   * running.
+   */
+  targets(tier: number): TimeTargets | null;
   /** Per-tier question counts, or null when the supply is endless. */
   tierCounts: number[] | null;
   pool(seed?: number): Question[];
@@ -47,6 +55,7 @@ export const DRILLS: Drill[] = [
     subtopics: [...new Set(CALCULUS_POOL.map((q) => q.subtopic))].sort(),
     size: CALCULUS_POOL.length,
     timed: false,
+    targets: () => null,
     tierCounts: [1, 2, 3, 4, 5].map(
       (tier) => CALCULUS_POOL.filter((q) => q.tier === tier).length,
     ),
@@ -59,6 +68,7 @@ export const DRILLS: Drill[] = [
     subtopics: [...MENTAL_SUBTOPICS],
     size: null,
     timed: true,
+    targets: (tier) => mentalTargets(tier),
     tierCounts: null,
     pool: (seed = Date.now()) => generateMentalMath(seed),
   },
