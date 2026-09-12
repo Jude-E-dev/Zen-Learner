@@ -337,18 +337,6 @@ it's not a free change.
 **Priority:** P4
 **Depends on:** None
 
-### Commit the hall art source alongside its derivation script
-
-**What:** `Sprites/Background` (the hall source art) still needs committing.
-
-**Why:** The derivation is now `scripts/sprites/hall.py`, which re-prints the
-`--color-hall-wall` value to re-sample along with the PNG — the script exists, but its source
-input isn't tracked yet.
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** None
-
 ---
 
 ## Animation
@@ -491,18 +479,6 @@ gaps rather than always-broken UI.
 **Priority:** P3
 **Depends on:** None
 
-### Delete verified-dead animation and color code
-
-**What:** `.anim-hit` and `@keyframes hit-pop` have zero consumers (about 15 lines including a
-bespoke reduced-motion clause). `--color-timber` has zero consumers and `Dojo.tsx:46` hardcodes
-its value instead.
-
-**Why:** Both confirmed by grep, both safe to delete — pure cleanup.
-
-**Effort:** S
-**Priority:** P4
-**Depends on:** None
-
 ### Watch the phone hall ceiling band and reduced-motion-in-browser verification
 
 See "A phone still gets a ceiling band above the hall" under Art & Sprites, and "Verify
@@ -525,6 +501,22 @@ needs a real device/browser check.
 ---
 
 ## Completed
+
+### Delete verified-dead animation and color code
+
+`.anim-hit` and `@keyframes hit-pop` had zero consumers (`.anim-hit-scene`/`hit-pop-scene`, the
+scene-coordinate sibling, is the one actually used by `Dojo.tsx`) — removed the class, the
+keyframe, and their reduced-motion entries. `--color-timber` had zero consumers; `Dojo.tsx:48`
+already hardcodes the same hex (`#7a5a3a`) in its palette map — removed the token.
+
+Both confirmed unused by grep before deleting. Full suite (348 tests) and `tsc --noEmit` both
+clean after.
+
+Also found while auditing this list: "Commit the hall art source alongside its derivation
+script" was already done — `Sprites/Background` has been tracked since `a01b381`. Removed as
+stale rather than re-logged as completed here.
+
+**Completed:** 2026-09-12
 
 ### Give TierBars a label and a sub-640px fallback
 

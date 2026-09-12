@@ -69,7 +69,6 @@
   --color-hall-wall: #25131c;
   --color-hall-lamp-lit: #ffe9b0;
   --color-hall-lamp-case-dim: #8a6a2a;
-  --color-timber: #7a5a3a;
 
   --font-pixel: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 
@@ -131,13 +130,6 @@ body {
   outline-offset: 2px;
 }
 
-/* The damage number that punches on a correct answer. */
-@keyframes hit-pop {
-  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
-  30% { transform: translate(0, -10px) scale(1.15); opacity: 1; }
-  100% { transform: translate(0, -26px) scale(1); opacity: 0; }
-}
-
 @keyframes miss-shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-3px); }
@@ -188,9 +180,9 @@ body {
 }
 
 /*
- * The same punch as hit-pop, in the practice hall's own coordinate system.
- * CSS lengths inside an SVG are user units, so the HTML version's 26px rise
- * would be a third of the way up a 64-unit-tall scene.
+ * The damage number that punches on a correct answer, in the practice hall's
+ * own coordinate system. CSS lengths inside an SVG are user units, so a
+ * pixel-scale rise would be a third of the way up a 64-unit-tall scene.
  */
 @keyframes hit-pop-scene {
   0% { transform: translateY(0) scale(0.6); opacity: 0; }
@@ -212,7 +204,6 @@ body {
 .anim-breathe { animation: breathe 2600ms step-end infinite; }
 .anim-lunge { animation: lunge 420ms steps(4, end) 1; }
 .anim-flinch { animation: flinch 180ms steps(3, end) 1; }
-.anim-hit { animation: hit-pop 700ms steps(12, end) forwards; }
 .anim-miss { animation: miss-shake 180ms steps(4, end) 1; }
 .anim-quiet { animation: quiet-in 260ms steps(6, end) both; }
 .anim-arc { animation: arc 320ms steps(5, end) 1; }
@@ -236,7 +227,6 @@ body {
  * without movement to catch the eye it needs longer to be read.
  */
 @media (prefers-reduced-motion: reduce) {
-  .anim-hit,
   .anim-miss,
   .anim-quiet,
   .anim-arc,
@@ -247,7 +237,6 @@ body {
   .anim-hit-scene {
     animation: none !important;
   }
-  .anim-hit,
   .anim-hit-scene {
     opacity: 1;
     transform: none;
