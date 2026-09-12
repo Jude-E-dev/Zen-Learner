@@ -107,6 +107,40 @@ describe("the cost ceiling", () => {
     // Not a tight fit that a slightly longer prompt would break.
     expect(projectedCost().cold).toBeLessThan(COST_CEILING_PER_PAUSE / 10);
   });
+
+  /*
+   * The real worst case, which the assertions above both understate.
+   *
+   * A pause is up to MAX_RUNG requests, and every one of them can be billed
+   * twice: a reply that leaks the answer is retried once at temperature 0
+   * (app/api/tutor/route.ts, `const second = await ask(0)`). So the worst a
+   * pause can cost is MAX_RUNG * 2 requests at the output cap — the per-card
+   * test above multiplies by MAX_RUNG at the *assumed mix*, and the at-the-cap
+   * test above prices a single request. Neither combines the two.
+   *
+   * Deliberately the default card rather than every card. claude-sonnet-5
+   * comes to $0.054 here, 1.8x the ceiling, so looping this over RATE_CARDS
+   * would fail — and the fix would be the one already applied to Opus 5 at
+   * config.ts ("deliberately absent"): drop the card. That is a call about
+   * which models stay selectable, not an arithmetic fact, so it is recorded in
+   * TODOS.md for a human rather than made here.
+   */
+  it("holds for the default model over a full pause where every rung leaks once", () => {
+    const card = RATE_CARDS[DEFAULT_MODEL];
+    const atOutputCap = costOf(
+      {
+        inputTokens: ASSUMED_MIX.stableInputTokens + ASSUMED_MIX.freshInputTokens,
+        cacheWriteTokens: 0,
+        cacheReadTokens: 0,
+        outputTokens: maxOutputTokens(card),
+      },
+      card,
+    );
+    const LEAK_RETRIES_PER_RUNG = 2;
+    expect(atOutputCap * MAX_RUNG * LEAK_RETRIES_PER_RUNG).toBeLessThanOrEqual(
+      COST_CEILING_PER_PAUSE,
+    );
+  });
 });
 
 describe("prompt caching", () => {

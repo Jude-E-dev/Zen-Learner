@@ -112,7 +112,39 @@ function textOf(message: Anthropic.Message): string {
     .trim();
 }
 
+/**
+ * Say so when the guards are off.
+ *
+ * `isAllowed` fails open by design: an unset secret skips the check, an unset
+ * origin accepts every origin. That is right for local dev and silent for a
+ * deploy that forgot them, which is the actual problem — a guard that is off
+ * is indistinguishable from a guard that is working, because both let the
+ * request through and neither says anything. So production says it out loud.
+ *
+ * Production only. Nothing is set in dev, so the warning there would be noise
+ * about a configuration that is correct. Per request rather than once per
+ * process: the request already costs money, so one line of log is the cheap
+ * half, and it stops the moment the vars are set.
+ */
+function warnIfFailingOpen(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const missing: string[] = [];
+  if (!process.env.ZEN_TUTOR_SHARED_SECRET && !process.env.NEXT_PUBLIC_ZEN_TUTOR_SECRET) {
+    missing.push("ZEN_TUTOR_SHARED_SECRET");
+  }
+  if (!process.env.ZEN_TUTOR_ORIGIN) missing.push("ZEN_TUTOR_ORIGIN");
+  if (missing.length === 0) return;
+
+  console.warn(
+    `[tutor] unset: ${missing.join(", ")} — the endpoint accepts any caller. ` +
+      `The provider spend cap is the only bound on worst-case loss. See docs/deploy.md.`,
+  );
+}
+
 export async function POST(req: Request) {
+  warnIfFailingOpen();
+
   if (!isAllowed(req)) {
     return NextResponse.json({ error: "not allowed" }, { status: 403 });
   }

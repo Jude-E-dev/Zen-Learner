@@ -220,3 +220,71 @@ describe("POST /api/tutor — a build with no key is still a working pause", () 
     });
   });
 });
+
+describe("POST /api/tutor — a deploy that forgot the guards says so", () => {
+  /*
+   * The guards fail open, which is correct for dev and dangerous on a public
+   * deploy: an unset secret and an unset origin both let every caller through
+   * without a word. These tests are about the word.
+   */
+  it("warns in production when both guards are unset", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ZEN_TUTOR_SHARED_SECRET", "");
+    vi.stubEnv("NEXT_PUBLIC_ZEN_TUTOR_SECRET", "");
+    vi.stubEnv("ZEN_TUTOR_ORIGIN", "");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+
+    await post({ question, rung: 1, wrongAnswer: "42" });
+
+    expect(warn).toHaveBeenCalledOnce();
+    const line = warn.mock.calls[0][0] as string;
+    expect(line).toContain("ZEN_TUTOR_SHARED_SECRET");
+    expect(line).toContain("ZEN_TUTOR_ORIGIN");
+    warn.mockRestore();
+  });
+
+  it("names only the guard that is missing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ZEN_TUTOR_SHARED_SECRET", "let-me-in");
+    vi.stubEnv("ZEN_TUTOR_ORIGIN", "");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+
+    await post({ question, rung: 1, wrongAnswer: "42" }, { "x-zen-tutor": "let-me-in" });
+
+    const line = warn.mock.calls[0][0] as string;
+    expect(line).toContain("ZEN_TUTOR_ORIGIN");
+    expect(line).not.toContain("ZEN_TUTOR_SHARED_SECRET");
+    warn.mockRestore();
+  });
+
+  it("stays quiet when both guards are set", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ZEN_TUTOR_SHARED_SECRET", "let-me-in");
+    vi.stubEnv("ZEN_TUTOR_ORIGIN", "https://zen-learner.example");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+
+    await post(
+      { question, rung: 1, wrongAnswer: "42" },
+      { "x-zen-tutor": "let-me-in", origin: "https://zen-learner.example" },
+    );
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("stays quiet in development, where nothing is set on purpose", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("ZEN_TUTOR_SHARED_SECRET", "");
+    vi.stubEnv("ZEN_TUTOR_ORIGIN", "");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+
+    await post({ question, rung: 1, wrongAnswer: "42" });
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
