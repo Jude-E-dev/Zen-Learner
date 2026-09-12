@@ -20,29 +20,6 @@ second look if a third drill lands and the phrasing needs to generalize again.
 **Priority:** P4
 **Depends on:** None
 
-### Give the mental-math clock a per-question time target
-
-**What:** No per-question time target exists, so "fast" is measured only against your own
-previous times.
-
-**Why:** A target-time band per tier would make the clock mean something on question one,
-instead of only becoming meaningful after a learner has a personal baseline.
-
-**Effort:** M
-**Priority:** P3
-**Depends on:** None
-
-### Reassess the tier 5 mental-math ceiling
-
-**What:** Tier 5 tops out around `41 × 25`.
-
-**Why:** If that stops being a stretch, the ceiling needs raising rather than the range
-widening — a note for whoever revisits tier balance.
-
-**Effort:** S
-**Priority:** P4
-**Depends on:** None
-
 ---
 
 ## Tutor
@@ -81,58 +58,54 @@ deliberately.
 
 ### Set the tutor's origin/secret env vars and a provider spend cap before going public
 
-**What:** The route honours `ZEN_TUTOR_ORIGIN` and `ZEN_TUTOR_SHARED_SECRET` (or its
-client-readable twin `NEXT_PUBLIC_ZEN_TUTOR_SECRET` — see 2026-09-10 fix below), but none of
-them are set in any deployed environment yet, so the checks are no-ops today. No provider
-spend cap is configured either.
+**What:** Two settings in two consoles, and nothing else. Everything that could be done inside
+the repo was done 2026-09-12: `.env.example` documents every variable the app reads and what
+breaks when each is missing, `docs/deploy.md` is an ordered checklist with the spend cap first
+and four `curl` probes that prove each guard is live rather than silently a no-op, `README.md`
+points at it, and `app/api/tutor/route.ts` now warns in production naming any guard that is
+unset.
 
-**Why:** These matter at deploy, not in local dev. The real bound on worst-case loss is the
-provider-level spend cap — that must be set in the provider console before this goes public,
-regardless of the origin/secret checks (which are documented in the code as convenience
-guards, not real security).
+**What is left, and it cannot be done from here:** set a monthly spend limit in the Anthropic
+console, and set `ZEN_TUTOR_ORIGIN` plus exactly one of the two secret names per environment in
+the hosting provider. Set one secret name, not both — the route reads `ZEN_TUTOR_SHARED_SECRET`
+first, so two different values means the browser sends the wrong one and every real request 403s.
+`NEXT_PUBLIC_ZEN_TUTOR_SECRET` is baked in at build time, so rotating it needs a redeploy rather
+than a restart.
+
+**Why:** The real bound on worst-case loss is the provider-level spend cap. That must be set in
+the provider console before this goes public, regardless of the origin/secret checks, which the
+code documents as convenience guards and not real security — the secret ships in the client
+bundle. What the docs added beyond the original entry is the reason this was dangerous rather
+than merely undone: both guards fail open, so before the warning landed, a deploy that forgot
+them was indistinguishable from one that had them.
 
 **Effort:** S (ops config, not code)
 **Priority:** P1
 **Depends on:** Going public with the key configured.
 
-### Exercise the pause UI in a real browser
+### Decide whether `claude-sonnet-5` keeps its rate card
 
-**What:** The route and the checks are verified programmatically; nobody has watched the world
-quiet down, the input lock, or the quota message in an actual session.
+**What:** At the true worst case, one pause on `claude-sonnet-5` costs $0.054 against a $0.03
+ceiling — 1.8x over. The default, `claude-haiku-4-5`, holds at $0.027.
 
-**Why:** Automated coverage (unit tests + the live-model eval) proves the logic; it doesn't
-prove the UX reads correctly to an actual learner mid-session.
+**Why:** A pause is up to `MAX_RUNG` (3) requests and each one can be billed twice, because a
+reply that leaks the answer is retried once at temperature 0 (`app/api/tutor/route.ts`). So the
+worst case is six requests at the 600-token output cap, not three. `lib/tutor/config.test.ts`
+multiplied by `MAX_RUNG` but never by the retry, and separately priced a single request at the
+output cap, so it asserted a bound the code can exceed. A test pinning the true worst case for
+the default model landed 2026-09-12; the per-card version of that same assertion is what fails on
+sonnet.
+
+**The decision, which is not arithmetic:** `lib/tutor/config.ts` already states that a card
+busting the ceiling is a bug even if nothing currently selects it, and Opus 5 was deliberately
+dropped for exactly this at $0.039. Following that precedent means deleting the sonnet card. The
+alternative is raising the ceiling, which is a budget call. Left unmade because it changes which
+models `ZEN_TUTOR_MODEL` can select, and `.env.local` currently pins haiku, so nothing is over
+budget today.
 
 **Effort:** S
 **Priority:** P2
 **Depends on:** None
-
----
-
-## Analytics
-
-### Cap or rotate the analytics event store
-
-**What:** Add a size cap or rotation policy to the IndexedDB analytics event store.
-
-**Why:** The eng review settled on buffering every event in IndexedDB with a dev-only export to
-`.jsonl`. Nothing ever removes them, so the store grows for the life of the browser profile —
-every question latency, every pause, every session, forever. Exports get slower over time, and
-the store eventually competes with actual progress data for the origin's storage quota.
-
-**Context:** The stack is IndexedDB-only with no server store, so this data has nowhere else to
-live. A ring buffer keeping the last N sessions (50 is a reasonable default) or an
-export-then-prune flow both solve it. The trigger to act: export times becoming noticeable, or
-the browser surfacing a storage warning.
-
-Pros: bounded storage, fast exports, and no risk of a browser eviction event taking progress
-data with it (eviction is origin-wide — it does not spare the progress records). Cons: rotation
-means older sessions age out, which is awkward for a session-1 vs session-5 comparison if the
-retention window is set too small.
-
-**Effort:** M
-**Priority:** P3
-**Depends on:** Stage 4 (persistence layer) existing first — it does now.
 
 ---
 
@@ -356,7 +329,10 @@ multi-frame flurry itself.
 unused second pose, and `Sprites/Rough_ronin_with_straw_h-Sword_attacking_fro` (a full
 8-direction set of a different attack, already transcribed once before the arc sheet arrived, so
 the route is known to work). `scripts/sprites/ronin-attack.py` is parameterised by frame and
-anchors, so generating another map is a few minutes.
+anchors, so generating another map is a few minutes — as of 2026-09-12 the script itself already
+generates all three (`cut`, `backhand`, `guard`), aligned on the hat and floor line. Not yet done:
+running it and pasting the three maps into `Dojo.tsx` as `RONIN_STRIKE`, and the cycling logic
+below.
 
 **The cost is where it always is with this approach: source size.** Each frame is 74 rows of 83
 characters, about 6KB inside `Dojo.tsx`. Three frames is 18KB of character grid in a component
@@ -404,80 +380,39 @@ which the plan explicitly constrains.
 
 ---
 
+## Input & Touch
+
+### A phone cannot reach the pause or end a session
+
+**What:** On `/play`, entering the tutor pause is `Shift+Enter` and ending the session is
+`Escape`, and neither has a button. ARMOURY is the only control a touch learner can press. The
+keyboard legend that at least *named* those two actions is now correctly hidden below `sm`, since
+it was an instruction a phone cannot follow — which leaves the features themselves with no
+affordance at all on a phone.
+
+**Why:** The pause is the app's headline feature and the only thing the tutor layer exists for, so
+a learner on a phone currently cannot reach the product's most interesting behaviour, and cannot
+end a session except by navigating away (which loses the summary card, and the card is this
+project's only distribution channel). Hiding the legend did not create this gap, it revealed it:
+before, a phone learner could read about two actions they could not perform.
+
+**Context:** Found while fixing the empty-state legends on 2026-09-12. The keyboard-first design
+is deliberate and documented at the top of `app/play/page.tsx` — this is not an argument against
+it, only that the two actions with no mouse route need one. `PausePanel` and `ArmouryPanel` keep
+their own keyboard prose, which is fine: the armoury has a real close button, and the pause is
+currently keyboard-only to enter anyway.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** None
+
+---
+
 ## Design System
 
 Remaining findings from the 2026-09-10 design review that were stopped at the 20% design-fix
 risk threshold (eight others were fixed and committed that day — see Completed). Full report in
 `~/.gstack/projects/Zen_Learner/designs/design-audit-20260910/`.
-
-### Unify tracking (letter-spacing) into a small token set
-
-**What:** Six tracking values, four of them arbitrary, spread across 9 files:
-`tracking-widest` x28, `tracking-[0.2em]` x11, plus `[0.3em]`, `[0.25em]`, `[0.4em]` and
-`tracking-wide`. `text-label` alone carries five different trackings plus none.
-
-**Why:** `--text-label` was tokenised precisely because the size had been written as
-`text-[10px]` in 21 places, and the same fix stopped one step short of a `--tracking-label`
-token beside it.
-
-**Effort:** M
-**Priority:** P3
-**Depends on:** None
-
-### Introduce a named button scale
-
-**What:** Thirteen controls, five padding/size combinations chosen per call site. The primary
-action is `px-6 py-3 text-base` on the home screen and `px-5 py-2 text-xs` on the summary screen
-— the two most important buttons in the product, at visibly different weights — plus five
-different hover vocabularies for one tier of control.
-
-**Why:** Three named tiers in `globals.css` beside `.pixel-frame` would collapse all of it into
-one system.
-
-**Effort:** M
-**Priority:** P3
-**Depends on:** None
-
-### Converge on one panel padding and one Dojo height API
-
-**What:** Four panel paddings for one surface (`p-4`, `p-5`, `p-6`, `p-7`) — `p-5` is clearly the
-house value and the question card is the one-site deviation. Four `Dojo` heights invented at
-four call sites — the component takes `mood` as a typed union but leaves size as a free-form
-string.
-
-**Why:** Systems drift: each deviation was probably reasonable in isolation, but together they
-erode the token system's value.
-
-**Effort:** M
-**Priority:** P3
-**Depends on:** None
-
-### Consolidate opacity modifiers
-
-**What:** Seven ad-hoc opacity modifiers at six values survived an earlier cleanup meant to
-remove them: `border-gold/50` and `border-gold/60` for the same warning-frame intent in two
-files, `bg-ink/85` and `bg-ink/90` ten lines apart.
-
-**Why:** Contrast is fine on all of them — this is a systems leak, not a bug, but worth fixing
-before it compounds further.
-
-**Effort:** S
-**Priority:** P4
-**Depends on:** None
-
-### Fix three empty-state regressions
-
-**What:** Three related gaps: rank meters read as loading skeletons at zero progress (two
-full-width rows of dashes); ending a session with nothing answered shows `0%` as the largest
-thing on screen; keyboard-only legends ("SHIFT+ENTER WHEN STUCK") still show at 375px on `/` and
-`/play`, where there is no keyboard (carried from 2026-09-09).
-
-**Why:** Each reads correctly with real data, which is why each was missed — genuine empty-state
-gaps rather than always-broken UI.
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** None
 
 ### Watch the phone hall ceiling band and reduced-motion-in-browser verification
 
@@ -501,6 +436,227 @@ needs a real device/browser check.
 ---
 
 ## Completed
+
+### Fix three empty-state regressions
+
+All three, plus a legend that was lying.
+
+**Rank meters at zero.** Both 32-segment tracks rendered fully unlit with `0/5 at T2+` and
+`— / 60%` — two full-width grey rows that read as a loading skeleton. Not a rare state either: a
+fresh learner sits at tier 1 while the next rank counts T2+, so that is where the bar lives for
+most of a first session. The tracks are now replaced by one line — `NOTHING AT T2+ YET — 5 CORRECT
+AT 60% EARNS IT` — behind an exported predicate `notStarted(rank)` (`rank.next !== null &&
+rank.accuracy === null`, which is exactly "nothing answered at that floor" per
+`lib/game/ranks.ts`). Deliberately NOT triggered when a learner has answered at the floor and got
+everything wrong: there the labels carry real numbers and there is progress to lose, so the bars
+stay.
+
+`TierBars` on the home page was checked and left alone — it reports the bank's per-tier question
+counts rather than learner progress, so a genuine `0` there is a fact and prints honestly.
+
+**The `0%`.** A session ended with nothing answered rendered `0%` at `text-6xl`, the largest thing
+on screen, which reads as a verdict on the learner. The metric is now dropped rather than faked or
+hidden: `THIS SESSION` / `NOTHING SCORED` at `text-2xl`, the same scale as the XP and TIER cells,
+so the card has no headline at all in that state, plus "Ended before a question was answered.
+Nothing lost." The bottom cells keep their honest zeros. The two `sr-only` headings that announced
+the same `0%` were fixed too, on `/play` and on the shared `/summary` route — a permalink can
+encode `a=0`, so the shared route needed it as well.
+
+**The keyboard legends** on `/` and `/play` are now `hidden sm:block`, following the house
+convention. No small-screen fallback on purpose, and the comment says why: unlike `TierBars`, a
+list of key presses is not content being reflowed away, it is an instruction a phone cannot follow.
+
+**Found while doing it:** the home page legend read `ENTER STARTS THE HIGHLIGHTED DRILL ·
+SHIFT+ENTER WHEN STUCK · ESC ENDS`, but that page's handler only starts a drill on Enter and only
+closes the armoury on Escape — those were `/play`'s keys, and Shift+Enter in fact just started the
+drill, since the handler ignores `shiftKey`. Corrected to `ENTER STARTS THE HIGHLIGHTED DRILL ·
+ESC CLOSES THE ARMOURY`. The deeper gap this exposed is logged above as its own entry.
+
+9 new tests across `components/RankBar.test.ts` and `app/play/clock.test.ts`; 383 passing, `tsc`
+clean.
+
+**Completed:** 2026-09-12
+
+### Give the mental-math clock a per-question time target
+
+The clock coloured itself against a hardcoded `5000` / `12000` for every tier, so "fast" meant
+five seconds whether the question was `7 + 8` or `49 × 29`, and it only meant anything once a
+learner had built a personal baseline.
+
+`lib/content/mental.ts` now holds a per-tier band — 3s, 4s, 5s, 7s, 10s, with `slow` at twice
+`target` — exposed as `mentalTargets(tier)` and surfaced through `Drill.targets(tier)`, which
+returns `null` for untimed drills so the play screen reads the band off the drill it already holds
+and never learns which drill it is running. Tiers outside 1..5 clamp rather than returning
+undefined, because a tier arrives here from a stored profile and a missing band would blank the
+clock instead of failing loudly. The numbers are the time each tier's own hint method takes when
+you know it, and they are explicitly a starting band: the honest version is each learner's median
+per tier, which the analytics events already record.
+
+Wired through `app/play/clock.ts` (`clockTone` and `targetCaption`, the only parts worth testing),
+using the **question's** tier rather than the selector's — those diverge when a tier runs out of
+unseen questions and the selector widens outward, and the band has to describe the question on
+screen. The target is visible, not just encoded in colour: an `AIM 3S` caption under the timer,
+outside the timer's `aria-hidden` because the target is a static fact worth hearing once whereas
+the ticking clock would be announced ten times a second.
+
+Also: the dev-only export button now reads `EXPORT EVENTS · LAST 50 SESSIONS (.JSONL)`, importing
+`RETAINED_SESSIONS` so the label cannot drift from the cap it describes.
+
+14 tests across `lib/content/mental.test.ts` and `app/play/clock.test.ts`.
+
+**Completed:** 2026-09-12
+
+### The mental-math drill no longer hydrates mismatched on a cold load
+
+`app/play/page.tsx` built its pool and its session in `useState` initializers, which run during
+render — the server render included. Mental math seeds from `Date.now()` and `startSession` stamps
+`session_start` and `attemptStartedAt` from the same clock, so the server and the hydrating client
+disagreed about which questions the session held and when it began. React discarded the server
+HTML and re-rendered, so the first question a learner saw could flip between paint and hydration.
+
+`Play` now mounts behind a client-only gate, so those initializers never run on the server. Nothing
+is lost: the pool, the session and the profile are all client state, so the server was rendering a
+session it was about to throw away. The cost is one empty frame, which the existing
+`Suspense fallback={null}` could already produce.
+
+Why it hid for so long, both halves now explained: only mental math showed it, because the calculus
+pool is a constant array, and only a cold document request showed it, because a client-side
+navigation never server-renders. That made it look like a dev-only artifact — it was not, since SSR
+runs in production too.
+
+No test guards this. The repo has no component-render harness and the defect exists only in the
+server/client render pair, which a node test cannot see. Verified in a browser instead: a cold load
+of `/play?drill=mental-math` must log no hydration error.
+
+**Completed:** 2026-09-12
+
+### Design system — tracking, button scale, panel padding, opacity (4 findings)
+
+The last four findings from the 2026-09-10 review that were stopped at the risk threshold.
+
+**Tracking:** six values, four arbitrary, across 9 files, collapsed to three tokens in `@theme`
+beside `--text-label` — `--tracking-label` (0.1em), `--tracking-title` (0.2em),
+`--tracking-wordmark` (0.3em) — with all 45 call sites routed through them. `tracking-widest` to
+`label` is pixel-identical; Tailwind's `widest` is exactly 0.1em. `[0.25em]` and `[0.4em]`
+collapsed one step each, to `title` and `wordmark`. Two deliberate appearance changes:
+`SummaryCard`'s two captions drop to 0.1em because "ACCURACY" three lines down was already doing
+the identical job at that value, and the home page's lowercase subtopic list loses
+`tracking-wide` rather than joining a step, since widening it would undo the line-length fix from
+FINDING-015. Trap avoided: Tailwind v4 ships `--tracking-wide/wider/widest`, so any of those
+names would have silently redefined a built-in utility instead of adding one.
+
+**Buttons:** 13 controls at 5 padding combinations with 5 hover vocabularies became
+`.btn-primary` / `.btn-secondary` / `.btn-quiet` beside `.pixel-frame`, across 11 call sites (the
+answer input and the avatar swatches are not buttons and were left alone). The home page's
+primary weight won, so `/summary`'s two links and `/play`'s GO AGAIN both get heavier — the two
+most important buttons in the product now agree. One hover vocabulary per tier. The 44px floor
+that only `/play`'s ARMOURY had by hand now belongs to the tier, so all six secondaries are 44px
+rather than 36px, which is what the comment at that call site had asked for.
+
+**Panels and the Dojo height:** the question card's `p-6` goes to `p-5`, the house value, leaving
+`p-5` everywhere except the two `p-7` sites — the fixed 420px shareable card and the broken-link
+card that deliberately mirrors its geometry, a matched pair rather than a drift. `Dojo`'s
+free-form height string became an exported `DojoSize` union with a `HEIGHTS` record, all four
+call-site heights preserved exactly, and the grow-with-a-floor comment moved onto the `fill`
+entry where it now documents the API instead of one call site.
+
+**Opacity:** seven ad-hoc modifiers at six values went to zero, via `--color-gold-mute`,
+`--color-ink-scrim` and a shared `.pixel-frame-warn`. `text-gold/70` became `text-gold-mute` set
+to the 70% blend rather than the average of the three golds, because that one carries 10px text
+and averaging down would have taken it from 5.3:1 to 3.4:1.
+
+**A real bug this surfaced: both gold warning frames have never been gold.** `.pixel-frame` is
+unlayered and Tailwind's utilities live in `@layer utilities`, so unlayered wins outright —
+`.pixel-frame`'s `border` shorthand beat `border-gold/50` and `border-gold/60` on the
+border-colour longhand, and both frames have been rendering `ink-line` grey. That is probably why
+the audit read the two values as interchangeable. Confirmed from the compiled AST, not by
+reading the CSS. `.pixel-frame-warn` sets its own border, so the storage warning and the
+notation-help panel show a gold frame for the first time — the intended design, but a visible
+change worth eyeballing.
+
+374 tests and `tsc --noEmit` clean, and `globals.css` compiled through `@tailwindcss/postcss` to
+prove every new utility and class actually generates, with 0 warnings.
+
+**Completed:** 2026-09-12
+
+### Cap or rotate the analytics event store
+
+The IndexedDB event store is now a session-count ring buffer at `RETAINED_SESSIONS = 50`
+(`lib/persistence/store.ts`).
+
+Rotation counts distinct session numbers, never rows, so a session ages out whole or not at all.
+That is the load-bearing decision: half a session still reads as a whole session to
+`buildReport`, which would describe a thirty-question run as a four-question one and dent exactly
+the session-1 vs session-5 curve these events exist to measure. The prune runs inside the same
+`readwrite` transaction as the append, so the cap is never briefly untrue and a failure rolls
+back both halves rather than leaving a write that never got pruned. Session commit is the only
+writer, which is also the migration path — a store that predates the cap gets trimmed on the
+first session finished after this ships, however many are backed up.
+
+No `DB_VERSION` bump: deleting rows needs no schema change, and an index on `session` would have
+required one against profiles that already hold real progress. `memoryStore()` rotates on the
+same shared `retentionCutoff` rule, because otherwise `readEvents()` would mean two different
+things depending on the browser and every test here drives the lenient one.
+`lib/analytics/report.ts` now says when session 1 has rotated out instead of silently reporting
+the earliest session present as the first.
+
+16 tests, mutation-checked: disabling the prune fails 3, and swapping the session cap for a row
+cap fails 3 including the never-keeps-half-a-session one, so the boundary test targets the real
+failure mode rather than passing vacuously.
+
+Still uncovered, deliberately noted rather than faked: the durable IndexedDB path itself. Node
+has no `indexedDB` and `fake-indexeddb` is not a dependency, so the tests drive `retentionCutoff`
+— the seam both paths share — instead. Adding `fake-indexeddb` as a devDependency would close it.
+
+**Completed:** 2026-09-12
+
+### Reassess the tier 5 mental-math ceiling
+
+Reassessed, and nothing needed changing — but the entry's own figure was wrong, which is worth
+recording so the next person doesn't re-derive it.
+
+The entry said tier 5 "tops out around `41 × 25`". The generator says otherwise: `twoByTwo` draws
+`a` from 13..49 and `b` from 13..29 (`lib/content/mental.ts`), so the real ceiling is
+`49 × 29 = 1421`, and `divide` is the other tier-5 generator. The range is already wider than the
+entry claimed, so there is nothing to raise and the "widen rather than raise" worry does not
+apply.
+
+Whether tier 5 is the right *difficulty* is a different question, and it wants the session data
+rather than a guess. The per-tier time band added the same day gives that question a second
+measurable dimension: if tier 5 answers cluster well under their 10s target, the ceiling is the
+thing to move.
+
+**Completed:** 2026-09-12
+
+### Exercise the pause UI in a real browser
+
+Drove the mental-math drill in a real (headless) browser session against the dev server and
+watched all four things automated coverage couldn't prove:
+
+- **The scene quiets.** `[data-testid=dojo] svg`'s computed opacity drops from `1` to `0.35`
+  exactly when a pause opens, confirmed both by direct DOM inspection and screenshot.
+- **The input locks correctly and only while a request is in flight.** `disabled` was `true`
+  mid-request (thinking) and `false` once the reply — tutored or authored — landed. Once the
+  daily quota is exhausted, the authored-fallback path is synchronous (no `/api/tutor` fetch),
+  so the input never locks for it at all — confirmed via the network log.
+- **Hint rungs advance correctly through all three, then reveal.** RUNG 1/3 → 2/3 → 3/3 →
+  "THE WHOLE PATH" with the full worked solution, each transition screenshotted.
+- **The quota message renders, and the quota gate actually prevents the wasted call.** Burned
+  through all 5 daily tutored pauses; the 6th showed "AUTHORED HINTS ONLY TODAY" in the footer
+  and the inline note ("That's your five tutored pauses for today. The ladder still works.")
+  — and, confirmed via the network log, fired zero requests to `/api/tutor` for that pause.
+
+All four read correctly to a learner, not just to a test. Screenshots in
+`.gstack/browse-reports/2026-09-12-1037/screenshots/`.
+
+One loose end from this pass was noted here as a probable dev-only cold-compile artifact — a
+single hydration-mismatch error (`MathText text="8 + 5"`) on the first cold request to
+`/play?drill=mental-math`, not reproducing on five subsequent navigations. That guess was wrong:
+it was a real bug (SSR seeding the mental-math pool and session clock from `Date.now()`, so the
+server and hydrating client disagreed), root-caused and fixed the same day — see "The mental-math
+drill no longer hydrates mismatched on a cold load" below.
+
+**Completed:** 2026-09-12
 
 ### Delete verified-dead animation and color code
 
